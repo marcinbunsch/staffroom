@@ -2,7 +2,12 @@
 
 A self-hosted place to keep a team of AI agents at work.
 
-Staffroom is one Node process that hosts the agents, owns the jobs and the
+You hire staff and work with them the way you work with people: chat with them
+from the browser, the desktop app or your phone, hand them jobs to work
+through on their own, put routines on a schedule, approve the actions you've
+marked as needing a person, and see what everything did and what it cost.
+
+Behind that is one Node process. It hosts the agents, owns the jobs and the
 schedule, keeps the audit record, and serves the web UI — all behind a login.
 A staff member is a row in a database: a name, a system prompt, a model, a
 credential, a list of tools. Adding an agent is an insert, not a rebuild. The
@@ -22,7 +27,7 @@ process, and each one is a tenant with their own staff, files and memory.
 - **Staff.** Agents defined as data, each with its own prompt, model, tools and
   memory. One agent function becomes whichever member a session addresses.
 - **Jobs.** When a request is more than a quick answer, an agent opens a job:
-  its own session, a timeline, a deadline, spending caps, cost attribution.
+  its own session, a timeline, a deadline, cost attribution.
 - **Routines and events.** An internal event bus; routines are subscriptions to
   it, and a scheduled run is just a job with a cron trigger.
 - **Tools and credentials.** A catalog of tools with five provisioning shapes
