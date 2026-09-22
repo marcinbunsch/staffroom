@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises"
 import { extname, join, normalize } from "node:path"
 import { fileURLToPath } from "node:url"
 import { Hono } from "hono"
-import type { Hono as HonoApp, MiddlewareHandler } from "hono"
+import type { Context, Hono as HonoApp, MiddlewareHandler } from "hono"
 import { apiRoutes } from "./routes/api-routes.ts"
 import { keysRoutes } from "./routes/keys-routes.ts"
 import { staffRoutes } from "./routes/staff-routes.ts"
@@ -70,19 +70,24 @@ export function createApp(options: AppOptions) {
   // gates the email sign-up endpoints; sign-in/out and OAuth fall through. Set
   // STAFFROOM_OPEN_SIGNUP to re-open it (e.g. to add another account). A
   // single-user server never opens it: its one account is made by local sign-in.
+  // Both fields on purpose: `error` is this API's own shape, `message` is the
+  // one better-auth's client surfaces — without it the sign-in screen shows a
+  // bare "Something went wrong." instead of the reason.
+  const refuse = (context: Context<SessionEnv>, message: string) =>
+    context.json({ error: message, message }, 403)
   app.on("POST", "/api/auth/sign-up/*", async (context, next) => {
     if (singleUserMode()) {
-      return context.json({ error: "Sign-up is closed on a single-user server." }, 403)
+      return refuse(context, "Sign-up is closed on a single-user server.")
     }
     if (!process.env.STAFFROOM_OPEN_SIGNUP && anyAccountExists()) {
-      return context.json({ error: "Sign-up is closed. Ask an admin to add your account." }, 403)
+      return refuse(context, "Sign-up is closed. Ask an admin to add your account.")
     }
     await next()
   })
   // Nor can an admin add accounts to a single-user server.
   app.on("POST", "/api/auth/admin/create-user", async (context, next) => {
     if (singleUserMode()) {
-      return context.json({ error: "A single-user server has only one account." }, 403)
+      return refuse(context, "A single-user server has only one account.")
     }
     await next()
   })
