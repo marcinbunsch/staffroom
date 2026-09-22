@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useLocation, useNavigate } from "react-router"
 import { useStores } from "../stores/context.tsx"
 import { api } from "./api.ts"
-import { chatOnShow, lastChatId } from "./last-chat.ts"
+import { chatOnClose, chatOnShow, lastChatId } from "./last-chat.ts"
 import { type ShortcutAction } from "./shortcuts.ts"
 
 // `/a/<agentId>` optionally followed by `/c/<chatId>`. Anchored so the ids come
@@ -51,6 +51,19 @@ export function useShortcuts(): void {
       // The chat actions only make sense while an agent is open.
       const agentId = match?.[1]
       if (!agentId) return false
+
+      if (action === "new-chat") {
+        // Mirror the tab strip's "+": open a side chat and jump to it.
+        void api.chats.open(agentId).then(
+          (created) => {
+            void store.chats.loadChats(agentId)
+            navigate(`/a/${agentId}/c/${created.id}`)
+          },
+          () => {},
+        )
+        return true
+      }
+
       const chats = store.chats.chatsFor(agentId)
       if (chats.length === 0) return false
       const requestedId = match?.[2] ? Number(match[2]) : undefined
@@ -58,13 +71,13 @@ export function useShortcuts(): void {
       if (action === "close-chat") {
         // Mirror the tab strip's × : only a side chat closes; the main chat
         // "starts over" instead, and cmd-w on it is a no-op. Drop it from the
-        // strip and fall back to the main chat, then close it on the server.
+        // strip and slide to its left neighbour, then close it on the server.
         const active = chatOnShow(chats, requestedId, lastChatId(agentId))
         if (!active || active.kind !== "side") return false
+        const landing = chatOnClose(chats, active.id)
         store.chats.dropChat(agentId, active.id)
         store.drafts.clear(active.session)
-        const main = chats.find((c) => c.kind === "main")
-        navigate(main ? `/a/${agentId}/c/${main.id}` : `/a/${agentId}`)
+        navigate(landing ? `/a/${agentId}/c/${landing.id}` : `/a/${agentId}`)
         void api.chats.close(active.id).then(
           () => store.chats.loadChats(agentId),
           () => {},

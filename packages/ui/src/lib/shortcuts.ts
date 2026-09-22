@@ -15,6 +15,7 @@ export type ShortcutAction =
   | "prev-agent"
   | "next-chat"
   | "prev-chat"
+  | "new-chat"
   | "close-chat"
   | "open-settings"
 
@@ -50,6 +51,11 @@ export const SHORTCUT_ACTIONS: { id: ShortcutAction; label: string; description:
     description: "Switch to the previous chat of the open agent.",
   },
   {
+    id: "new-chat",
+    label: "New chat",
+    description: "Open a new side chat with the open agent.",
+  },
+  {
     id: "close-chat",
     label: "Close chat",
     description: "Close the open side chat. The main chat can't be closed.",
@@ -59,15 +65,16 @@ export const SHORTCUT_ACTIONS: { id: ShortcutAction; label: string; description:
 
 /**
  * cmd-k for the command palette, cmd-[ / cmd-] for agents, shift-cmd-[ /
- * shift-cmd-] for chats, cmd-w to close the open side chat, and cmd-, for
- * settings — the conventional macOS chords.
+ * shift-cmd-] for chats, cmd-t for a new chat, cmd-w to close the open side
+ * chat, and cmd-, for settings — the conventional macOS chords.
  */
 export const DEFAULT_BINDINGS: Record<ShortcutAction, Binding> = {
   "open-palette": { code: "KeyK", meta: true, ctrl: false, alt: false, shift: false },
-  "next-agent": { code: "BracketLeft", meta: true, ctrl: false, alt: false, shift: false },
-  "prev-agent": { code: "BracketRight", meta: true, ctrl: false, alt: false, shift: false },
-  "next-chat": { code: "BracketLeft", meta: true, ctrl: false, alt: false, shift: true },
-  "prev-chat": { code: "BracketRight", meta: true, ctrl: false, alt: false, shift: true },
+  "next-agent": { code: "BracketRight", meta: true, ctrl: false, alt: false, shift: false },
+  "prev-agent": { code: "BracketLeft", meta: true, ctrl: false, alt: false, shift: false },
+  "next-chat": { code: "BracketRight", meta: true, ctrl: false, alt: false, shift: true },
+  "prev-chat": { code: "BracketLeft", meta: true, ctrl: false, alt: false, shift: true },
+  "new-chat": { code: "KeyT", meta: true, ctrl: false, alt: false, shift: false },
   "close-chat": { code: "KeyW", meta: true, ctrl: false, alt: false, shift: false },
   "open-settings": { code: "Comma", meta: true, ctrl: false, alt: false, shift: false },
 }

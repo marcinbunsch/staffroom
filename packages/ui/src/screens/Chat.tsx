@@ -14,7 +14,7 @@ import { Avatar, StatusDot } from "../design/index.ts"
 import { type AttentionRow, type FileRow, type StaffRow, type TabChatRow, api } from "../lib/api.ts"
 import { buildAttachmentBody } from "../lib/attachments.ts"
 import { initials } from "../lib/format.ts"
-import { chatOnShow, lastChatId, rememberChat } from "../lib/last-chat.ts"
+import { chatOnClose, chatOnShow, lastChatId, rememberChat } from "../lib/last-chat.ts"
 import { useStores } from "../stores/context.tsx"
 
 /**
@@ -106,13 +106,13 @@ export const Chat = observer(function Chat() {
           }}
           onRename={(target, title) => api.chats.rename(target.id, title).then(reload)}
           onClose={async (target) => {
-            // Drop it from the strip at once, and if it was the open tab move to
-            // the main chat explicitly (not via the now-stale last-viewed id).
+            // Drop it from the strip at once, and if it was the open tab slide
+            // to its left neighbour (not via the now-stale last-viewed id).
+            const landing = chatOnClose(chats, target.id)
             store.chats.dropChat(agentId, target.id)
             store.drafts.clear(target.session)
             if (target.id === chat.id) {
-              const main = chats.find((c) => c.kind === "main")
-              navigate(main ? `/a/${agentId}/c/${main.id}` : `/a/${agentId}`)
+              navigate(landing ? `/a/${agentId}/c/${landing.id}` : `/a/${agentId}`)
             }
             await api.chats.close(target.id)
             reload()

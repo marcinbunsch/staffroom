@@ -41,3 +41,14 @@ export function chatOnShow(
   const byId = (id?: number) => (id === undefined ? undefined : chats.find((c) => c.id === id))
   return byId(requested) ?? byId(last) ?? chats.find((c) => c.kind === "main") ?? chats[0]
 }
+
+/**
+ * Where to land after closing a tab: its left neighbour in the strip, so focus
+ * slides over one instead of snapping to the main chat. The strip is main-first,
+ * so the neighbour of the first side chat is the main chat.
+ */
+export function chatOnClose(chats: TabChatRow[], closedId: number): TabChatRow | undefined {
+  const index = chats.findIndex((c) => c.id === closedId)
+  if (index <= 0) return chats.find((c) => c.id !== closedId)
+  return chats[index - 1]
+}
