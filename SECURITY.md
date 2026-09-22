@@ -15,7 +15,7 @@ a rota — if a fix needs time, you'll be told where it stands rather than left
 waiting. Fixes are disclosed in the advisory once released, crediting you unless
 you'd rather not be named.
 
-[advisories]: ../../security/advisories/new
+[advisories]: https://github.com/marcinbunsch/staffroom/security/advisories/new
 
 ## What Staffroom assumes
 

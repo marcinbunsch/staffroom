@@ -2,7 +2,13 @@
   "name": "staffroom",
   "version": "0.5.0",
   "private": true,
+  "homepage": "https://github.com/marcinbunsch/staffroom#readme",
+  "bugs": "https://github.com/marcinbunsch/staffroom/issues",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcinbunsch/staffroom.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "concurrently -n server,ui -c blue,magenta --kill-others \"STAFFROOM_URL=http://127.0.0.1:5317 pnpm --filter @staffroom/server dev\" \"pnpm --filter @staffroom/ui dev\"",

@@ -112,9 +112,9 @@ The limit is clamped: `search()` defaults to 20 and caps at 100
 asks for 10, the route for 25.
 
 The larger omission is deliberate: **there are no embeddings, and no semantic
-search.** The reason is concrete rather than principled — the Codex login this
-project runs on grants no embedding endpoint, and semantic search would need
-either a separate API key or a local ONNX model, and neither earns its keep
+search.** The reason is concrete rather than principled — the subscription
+logins Staffroom is typically run on grant no embedding endpoint, so semantic
+search would need either a separate API key or a local ONNX model, and neither earns its keep
 before keyword search has been used in anger. Keyword search has a real blind
 spot: it misses paraphrase. "Find what I wrote about the auth rewrite" will not
 match a file that discussed the same work in other words. When that blind spot

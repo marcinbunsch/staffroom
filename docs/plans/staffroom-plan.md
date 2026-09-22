@@ -181,7 +181,8 @@ So the flow is:
    session: "Your request to send mail to X was approved — proceed." The
    session history is intact, so the model sees its own earlier attempt.
 4. A denial is the same mechanism with a reason the model can adapt to.
-5. The job's deadline still bounds it (see [`job-deadlines.md`](job-deadlines.md)).
+5. The job's deadline still bounds it (see `job-deadlines.md`, a prototype-era
+   plan).
    If it expires first, the job fails and the pending request is cancelled — a
    late approval never wakes a dead job.
 
@@ -338,8 +339,10 @@ misses paraphrase.
 
 ## 8. Agent-to-agent
 
-[`agent-to-agent.md`](agent-to-agent.md) stands: blocking calls, one thread per
-pair, threads read-only and not tabs, no unread, no request record.
+The prototype's `agent-to-agent.md` plan stands: blocking calls, one thread per
+pair, threads read-only and not tabs, no unread, no request record. (The built
+feature is described in
+[`../primers/agent-to-agent.md`](../primers/agent-to-agent.md).)
 
 **One addition.** It deferred loop protection, saying the shape would be a call
 chain. §5 builds exactly that, so a2a adopts and shares it.
@@ -596,12 +599,11 @@ that misses one.
 - [`../primers/architecture.md`](../primers/architecture.md),
   [`../primers/jobs.md`](../primers/jobs.md),
   [`../primers/memory.md`](../primers/memory.md),
-  [`../primers/tools.md`](../primers/tools.md),
-  [`../primers/ui.md`](../primers/ui.md),
-  [`../primers/operations.md`](../primers/operations.md) — read before rewriting
-  the area each describes.
-- [`event-bus.md`](event-bus.md) — the idea this plan settles.
-- [`prd-files.md`](prd-files.md), [`agent-artifacts.md`](agent-artifacts.md) —
-  the two halves §4 collapses into one.
-- [`agent-to-agent.md`](agent-to-agent.md) — stands, plus the shared chain.
-- [`job-deadlines.md`](job-deadlines.md) — bounds a suspended confirm-gate.
+  [`../primers/tools-and-credentials.md`](../primers/tools-and-credentials.md) —
+  read before rewriting the area each describes; the full set is indexed in
+  [`../primers/README.md`](../primers/README.md).
+- The rest are prototype-era plans (local checkout, not in this repository —
+  see the note at the top): `event-bus.md`, the idea this plan settles;
+  `prd-files.md` and `agent-artifacts.md`, the two halves §4 collapses into
+  one; `agent-to-agent.md`, which stands, plus the shared chain; and
+  `job-deadlines.md`, which bounds a suspended confirm-gate.
