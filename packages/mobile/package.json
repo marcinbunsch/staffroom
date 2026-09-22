@@ -1,6 +1,6 @@
 {
   "name": "@staffroom/mobile",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "description": "Staffroom native mobile shell — a thin Capacitor client over a running server.",
   "license": "Apache-2.0",
