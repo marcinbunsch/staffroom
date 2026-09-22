@@ -1,0 +1,408 @@
+@import "./theme.css";
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans, "IBM Plex Sans", system-ui, sans-serif);
+  background: var(--surface-canvas);
+  color: var(--ink-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Desktop shell (Electron, frameless title bar): mark a region draggable so the
+   window can be moved by dragging it, and opt interactive children back out. */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* The small amount of bespoke CSS the design system has no specimen for and
+   utility classes can't express: Markdown rendering (react-markdown emits raw
+   <pre>/<table>/<code>/… to style) and the chat transcript internals (thinking
+   blocks, tool activity, the working dots). Ported from the prototype's app.css.
+   Sits in Tailwind's `base` layer so a design-system utility always wins. */
+@layer base {
+  .markdown {
+    line-height: 1.6;
+    /* An agent (or operator) can emit a URL, hash, or minified blob with no break
+       point. `anywhere` (not `break-word`) also reduces the element's min-content
+       size, so such a token breaks inside a width-constrained bubble instead of
+       pushing it — and the transcript — wider. */
+    overflow-wrap: anywhere;
+  }
+  .markdown > :first-child {
+    margin-top: 0;
+  }
+  .markdown > :last-child {
+    margin-bottom: 0;
+  }
+  /* Tailwind's preflight strips heading sizes and weights, paragraph margins,
+     and list markers back to nothing. Agents write all three, so restore them. */
+  .markdown h1,
+  .markdown h2,
+  .markdown h3,
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 {
+    margin: 16px 0 8px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .markdown h1 {
+    font-size: 1.5em;
+  }
+  .markdown h2 {
+    font-size: 1.3em;
+  }
+  .markdown h3 {
+    font-size: 1.15em;
+  }
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 {
+    font-size: 1em;
+  }
+  .markdown p:not(:last-child) {
+    margin-bottom: 8px;
+  }
+  .markdown pre {
+    margin-top: 4px;
+    overflow-x: auto;
+    padding: 10px;
+    background: var(--surface-card);
+    border: 0.5px solid var(--line-default);
+    border-radius: 8px;
+  }
+  .markdown code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+  /* GitHub-flavoured tables. Agents use these for roll-ups, and an agent's table
+     can be wider than the pane, so it scrolls rather than stretching the page. */
+  .markdown table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin: 8px 0;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.95em;
+  }
+  .markdown th,
+  .markdown td {
+    padding: 5px 10px;
+    border: 0.5px solid var(--line-default);
+    text-align: left;
+    vertical-align: top;
+  }
+  .markdown th {
+    background: var(--surface-card);
+    font-weight: 500;
+  }
+  .markdown td {
+    overflow-wrap: anywhere;
+  }
+  .markdown blockquote {
+    margin: 8px 0;
+    padding-left: 10px;
+    border-left: 2px solid var(--line-default);
+    color: var(--ink-secondary);
+  }
+  .markdown ul,
+  .markdown ol {
+    margin: 6px 0;
+    padding-left: 20px;
+  }
+  .markdown ul {
+    list-style: disc;
+  }
+  .markdown ol {
+    list-style: decimal;
+  }
+  .markdown li.task-list-item {
+    list-style: none;
+    margin-left: -18px;
+  }
+  .markdown li.task-list-item input {
+    width: auto;
+    margin-right: 6px;
+  }
+
+  /* Mermaid flowchart labels: mermaid colours node boxes and edge labels from
+     one variable (nodeTextColor), and the boxes need light on-fill ink — which
+     leaves the edge labels (Yes/No) unreadable on their neutral plate. Mermaid
+     exposes no separate edge-label colour, so give them dark body ink here.
+     `!important` (in a layer) clears mermaid's own `.label { color }`, which the
+     library injects unlayered and non-important into each diagram's <style>. */
+  .mermaid-chart .edgeLabel,
+  .mermaid-chart .edgeLabel .label,
+  .mermaid-chart .edgeLabel foreignObject,
+  .mermaid-chart .edgeLabel span,
+  .mermaid-chart .edgeLabel p {
+    color: var(--ink-secondary) !important;
+  }
+  .mermaid-chart .edgeLabel text {
+    fill: var(--ink-secondary) !important;
+  }
+
+  .turn-usage {
+    margin-top: 8px;
+    color: var(--ink-muted);
+    font-size: 11px;
+  }
+  .turn-usage time {
+    font-family: var(--font-mono);
+    color: var(--ink-disabled);
+  }
+  /* Copy-as-markdown icon, tucked beside the time. Faint until hovered. */
+  .turn-copy {
+    margin-left: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink-disabled);
+    font-size: 12px;
+    line-height: 1;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  .turn-copy:hover {
+    color: var(--ink-primary);
+  }
+
+  /* A turn or send that failed — surfaced in the transcript, not swallowed. */
+  .chat-error {
+    align-self: stretch;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    background: var(--tint-failed);
+    border: 0.5px solid var(--line-danger);
+    border-radius: 8px;
+    color: var(--status-failed);
+    font-size: 12px;
+  }
+  .chat-error > i {
+    font-size: 15px;
+    margin-top: 1px;
+  }
+  .chat-error-title {
+    font-weight: 600;
+  }
+  .chat-error-detail {
+    margin-top: 2px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .chat-retry {
+    align-self: center;
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 0.5px solid var(--line-danger);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--status-failed);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* A long agent summary, collapsed to its first line. */
+  .summary-block,
+  .summary-open {
+    margin-top: 6px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--ink-secondary);
+    font-size: 12px;
+  }
+  .summary-block > summary {
+    display: list-item;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .summary-block > summary:hover {
+    color: var(--ink-primary);
+  }
+  .summary-block[open] > summary {
+    margin-bottom: 6px;
+    white-space: normal;
+    color: var(--ink-muted);
+  }
+  .summary-block .markdown,
+  .summary-open .markdown {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .system-card .summary-block,
+  .system-card .summary-open {
+    margin-top: 0;
+  }
+  .system-card .summary-block > summary {
+    line-height: 19px;
+  }
+
+  /* A small pill of dots while a turn runs, lined up under the agent's output. */
+  .agent-working {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--surface-control);
+  }
+  .agent-working span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-muted);
+    animation: agent-dot 1.1s ease-in-out infinite;
+  }
+  .agent-working span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .agent-working span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  .turn-processing {
+    margin: 0 0 8px;
+    color: var(--ink-secondary);
+    font-size: 12px;
+  }
+  .turn-processing summary {
+    cursor: pointer;
+    color: var(--ink-muted);
+  }
+  .turn-processing-body {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-top: 8px;
+    padding-left: 10px;
+    border-left: 2px solid var(--line-default);
+  }
+  .thinking-block {
+    padding: 7px 9px;
+    background: var(--surface-panel);
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .thinking-block > :first-child {
+    margin-top: 0;
+  }
+  .thinking-block > :last-child {
+    margin-bottom: 0;
+  }
+  .tool-activity {
+    color: var(--ink-secondary);
+    /* A bash command or tool input is shown in full and can be one long token. */
+    overflow-wrap: anywhere;
+  }
+  .tool-activity.running {
+    color: var(--status-working);
+  }
+  .tool-activity.failed {
+    color: var(--status-failed);
+  }
+  /* A settled call is a disclosure: one line collapsed, full input/output open. */
+  .tool-call > summary {
+    display: list-item;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+  .tool-call > summary:hover {
+    color: var(--ink-primary);
+  }
+  .tool-call[open] > summary {
+    margin-bottom: 6px;
+    white-space: normal;
+  }
+  .tool-call-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 18px;
+  }
+  .tool-call-section-label {
+    margin-bottom: 2px;
+    color: var(--ink-faint);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .tool-call-section-body {
+    margin: 0;
+    max-height: 320px;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--surface-panel);
+    color: var(--ink-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  @keyframes agent-dot {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: translateY(0);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+  }
+}
+
+/* The chrome-free artifact print view (/print/:id) — what the browser's "Save as
+   PDF" captures. Hide the screen-only toolbar, force a white page (a themed
+   canvas fill would either waste ink or be dropped by the print engine), keep
+   the palette so chart strokes/fills survive, and stop charts and code blocks
+   from splitting across a page break. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .artifact-print {
+    min-height: 0;
+    background: #fff;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .artifact-print :is(svg, img, pre, table) {
+    break-inside: avoid;
+  }
+  /* A PDF page is static: a chart's scroll region would freeze as a dead
+     scrollbar (and its track would print), so drop the frame's scroll. Charts
+     render once at the on-screen width, which is wider than the printed page —
+     so scale each SVG down to the column instead of letting it overflow the
+     card. All three engines (Mermaid, Graphviz, Vega) emit a viewBox, so this
+     scales the drawing rather than clipping it. */
+  .artifact-print .chart-frame {
+    overflow: visible;
+  }
+  .artifact-print .chart-frame svg {
+    max-width: 100%;
+    height: auto;
+  }
+}

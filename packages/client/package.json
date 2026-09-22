@@ -1,0 +1,22 @@
+{
+  "name": "@staffroom/client",
+  "version": "0.5.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@staffroom/protocol": "workspace:*",
+    "hono": "4.13.5"
+  },
+  "devDependencies": {
+    "@staffroom/server": "workspace:*",
+    "vitest": "4.1.11"
+  }
+}

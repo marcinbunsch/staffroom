@@ -1,0 +1,27 @@
+{
+  "name": "@staffroom/mobile",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Staffroom native mobile shell — a thin Capacitor client over a running server.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "sync": "cap sync ios",
+    "open": "cap open ios",
+    "launch": "cap sync ios && cap run ios --target 31FD76E9-9C5D-4A0C-9EF3-C52E0C73DC11",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "true"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/ios": "^8.5.1",
+    "typescript": "7.0.2"
+  }
+}

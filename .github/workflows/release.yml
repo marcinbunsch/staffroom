@@ -1,0 +1,119 @@
+name: Release
+
+# Tag a release and the signed, notarized macOS app appears on it:
+#
+#     npm version 0.1.0 --no-git-tag-version   # or edit package.json
+#     git commit -am "Release 0.1.0" && git tag v0.1.0 && git push --tags
+#
+# `workflow_dispatch` builds the same artifact without a tag and without
+# signing, for checking a change to the packaging before cutting a release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# gh release create/upload writes to the repo.
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    # arm64. To also ship Intel, make this a matrix over
+    # STAFF_PACK_ARCH: [arm64, x64] — packager fetches the right Electron and
+    # better-sqlite3 already ships the darwin-x64 prebuild.
+    runs-on: macos-latest
+    timeout-minutes: 45
+    # A step's `if` cannot read `secrets` (GitHub rejects the whole workflow
+    # file), so the certificate is surfaced as env for the import step to test.
+    env:
+      STAFF_SIGN_CERT_P12: ${{ secrets.STAFF_SIGN_CERT_P12 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      # Note: no ELECTRON_SKIP_BINARY_DOWNLOAD here, unlike ci.yml. The packager
+      # builds the app around the downloaded Electron binary, so it is required.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # pack.mjs reads appVersion from the root package.json, so the tag has to
+      # land there before the build. Not committed — the tag is the record.
+      - name: Version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: npm pkg set version="${GITHUB_REF_NAME#v}"
+
+      # The Developer ID cert, into a keychain that exists only for this job.
+      # Skipped when the secret is absent, which is what makes an unsigned
+      # workflow_dispatch build work with no secrets configured at all.
+      - name: Import signing certificate
+        if: env.STAFF_SIGN_CERT_P12 != ''
+        env:
+          CERT: ${{ env.STAFF_SIGN_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.STAFF_SIGN_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          echo "$CERT" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" \
+            -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          # Without this, codesign prompts for keychain access and the job hangs.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          # Put it on the search list so codesign finds the identity by name.
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
+      - name: Build
+        run: pnpm build:desktop
+
+      # Signing and notarization switch on from these three. When the secrets
+      # are unset pack.mjs produces an unsigned app and exits 0, so a dispatch
+      # build still gives you something to inspect.
+      - name: Package
+        env:
+          STAFF_SIGN_IDENTITY: ${{ secrets.STAFF_SIGN_IDENTITY }}
+          STAFF_SIGN_APPLE_ID: ${{ secrets.STAFF_SIGN_APPLE_ID }}
+          STAFF_SIGN_APP_PASSWORD: ${{ secrets.STAFF_SIGN_APP_PASSWORD }}
+          # Only needed if the identity string has no "(TEAMID)" suffix to parse.
+          STAFF_SIGN_TEAM_ID: ${{ secrets.STAFF_SIGN_TEAM_ID }}
+        run: pnpm --filter @staffroom/desktop pack
+
+      # After notarization, not before: notarizing staples the ticket to the
+      # bundle, and a zip made earlier would not carry it. ditto is what Apple
+      # documents for this — `zip` mangles the symlinks in a .app.
+      - name: Zip the app
+        id: zip
+        run: |
+          APP="packages/desktop/out/Staffroom-darwin-$(uname -m | sed s/x86_64/x64/)/Staffroom.app"
+          NAME="Staffroom-${GITHUB_REF_NAME}-darwin-$(uname -m | sed s/x86_64/x64/).zip"
+          ditto -c -k --keepParent "$APP" "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          # Proof in the log that the artifact is what it claims to be.
+          codesign --verify --deep --strict --verbose=2 "$APP" || true
+          spctl --assess --type execute --verbose "$APP" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.zip.outputs.name }}
+          path: ${{ steps.zip.outputs.name }}
+
+      # Draft, so the release is yours to write and publish. Delete --draft to
+      # publish straight from the tag.
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" "${{ steps.zip.outputs.name }}" --clobber

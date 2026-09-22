@@ -1,0 +1,20 @@
+{
+  "name": "@staffroom/desktop",
+  "version": "0.5.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "main.mjs",
+  "scripts": {
+    "start": "electron .",
+    "pack": "node scripts/pack.mjs",
+    "install:app": "node scripts/install.mjs",
+    "check": "node --check main.mjs && node --check local-server.mjs && node --check preload.cjs && node --check local-preload.cjs && node --check launcher-preload.cjs && node --check scripts/pack.mjs && node --check scripts/install.mjs",
+    "test": "true"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "44.0.0"
+  },
+  "productName": "Staffroom"
+}

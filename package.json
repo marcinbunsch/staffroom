@@ -1,0 +1,36 @@
+{
+  "name": "staffroom",
+  "version": "0.5.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,ui -c blue,magenta --kill-others \"STAFFROOM_URL=http://127.0.0.1:5317 pnpm --filter @staffroom/server dev\" \"pnpm --filter @staffroom/ui dev\"",
+    "dev:server": "STAFFROOM_URL=http://127.0.0.1:5317 pnpm --filter @staffroom/server dev",
+    "build": "pnpm --filter @staffroom/server build && pnpm --filter @staffroom/ui build && pnpm --filter @staffroom/cli build",
+    "serve": "node --env-file-if-exists=.env packages/server/serve.mjs",
+    "sandbox:build": "pnpm --filter @staffroom/server sandbox:build",
+    "staffroom": "node packages/cli/dist/staffroom.mjs",
+    "desktop": "pnpm --filter @staffroom/desktop start",
+    "build:desktop": "pnpm --filter @staffroom/server build && pnpm --filter @staffroom/server build:desktop && pnpm --filter @staffroom/ui build",
+    "desktop:install": "pnpm build:desktop && STAFF_PACK_SKIP_NOTARIZE=1 pnpm --filter @staffroom/desktop run pack && pnpm --filter @staffroom/desktop run install:app",
+    "mobile": "pnpm --filter @staffroom/mobile launch",
+    "dev:desktop": "concurrently -n ui,desktop -c magenta,cyan --kill-others \"STAFFROOM_UI_PORT=5328 pnpm --filter @staffroom/ui dev\" \"STAFFROOM_DESKTOP_DEV_URL=http://127.0.0.1:5328 pnpm --filter @staffroom/desktop start\"",
+    "check": "pnpm -r check && pnpm test && pnpm lint && pnpm format:check",
+    "test": "pnpm -r --if-present test",
+    "lint": "oxlint",
+    "format": "oxfmt --ignore-path .gitignore --ignore-path .prettierignore",
+    "format:check": "oxfmt --ignore-path .gitignore --ignore-path .prettierignore --check"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.0",
+    "concurrently": "10.0.5",
+    "oxfmt": "0.65.0",
+    "oxlint": "1.80.0",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=26"
+  },
+  "packageManager": "pnpm@10.14.0"
+}

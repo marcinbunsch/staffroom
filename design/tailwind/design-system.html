@@ -1,0 +1,2926 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff — Tailwind design system</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+    <script>
+      /* The preview host occasionally drops this subresource, leaving the page with
+   zero compiled utilities. Detect that, retry from a second CDN, and reload
+   once as a last resort. Real builds compile at build time and need none of
+   this — see readme.md. */
+      ;(function () {
+        var SRCS = [
+          "https://unpkg.com/@tailwindcss/browser@4.1.11/dist/index.global.js",
+          "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js",
+        ]
+        var i = 0,
+          pending = false
+        function compiled() {
+          return getComputedStyle(document.body).fontFamily.indexOf("IBM Plex") > -1
+        }
+        function check() {
+          if (compiled()) {
+            sessionStorage.removeItem("staff-css-retry")
+            return
+          }
+          if (pending) return
+          if (i < SRCS.length) {
+            pending = true
+            var s = document.createElement("script")
+            s.src = SRCS[i++]
+            s.onload = s.onerror = function () {
+              pending = false
+              setTimeout(check, 1200)
+            }
+            document.head.appendChild(s)
+            return
+          }
+          if (!sessionStorage.getItem("staff-css-retry")) {
+            sessionStorage.setItem("staff-css-retry", "1")
+            location.reload()
+          }
+        }
+        addEventListener("load", function () {
+          setTimeout(check, 1000)
+        })
+      })()
+    </script>
+    <!-- Dev reference only: the CDN build compiles the theme inline. In the app,
+     `@import "./theme.css"` from your real stylesheet does the same job. -->
+    <style type="text/tailwindcss">
+      @import "tailwindcss";
+      /* ==========================================================================
+   Staff — Tailwind v4 theme
+   --------------------------------------------------------------------------
+   Two layers, on purpose:
+
+   1. A RUNTIME VARIABLE LAYER (:root and [data-theme="light"]) holding the
+      actual hex values. Theme switching happens here and nowhere else —
+      set data-theme="light" on <html> and every utility follows.
+   2. An @theme inline BLOCK mapping those variables to Tailwind's token
+      namespaces, which is what generates the utilities. `inline` is required:
+      without it Tailwind would bake the dark hex into each utility and the
+      light theme would never take effect.
+
+   Naming: surfaces are bg-surface-*, borders border-line-*, text text-ink-*,
+   state colours *-status-*. Never reach for a raw hex or a Tailwind palette
+   colour (bg-neutral-900, text-slate-400) — colour in this product is a
+   status channel, and the palette is closed.
+   ========================================================================== */
+
+      /* Fonts and icons arrive via link tags in the head on this page: the browser
+   build cannot resolve the remote stylesheet imports theme.css uses. */
+
+      /* ---------- 1. runtime variables: dark (default) ---------- */
+
+      :root {
+        --surface-canvas: #101013;
+        --surface-rail: #0b0b0d;
+        --surface-rail-alt: #0d0d10;
+        --surface-panel: #131317;
+        --surface-card: #15151a;
+        --surface-card-hover: #17171b;
+        --surface-selected: #1c1c21;
+        --surface-hover: #14141a;
+        --surface-control: #23232a; /* monograms, chips, disabled fills */
+        --surface-control-hover: #2a2a33; /* resting fill for primary buttons */
+        --surface-control-active: #32323d; /* primary button hover */
+        --surface-inset: #1e1e24;
+        --surface-attention: #17161a;
+        --surface-confidential: #14181c;
+        --surface-confidential-strong: #1a2027;
+
+        --line-subtle: #1a1a1f;
+        --line-default: #212128;
+        --line-inset: #1e1e24;
+        --line-strong: #2a2a31;
+        --line-control: #33333c;
+        --line-attention: #2a2620;
+        --line-danger: #3a2a28;
+        --line-failed: #2c211f;
+        --line-confidential: #22303a;
+        --line-accent: #2e3644;
+
+        --ink-primary: #ecebe8;
+        --ink-body: #dddad5;
+        --ink-secondary: #cfccc7;
+        --ink-muted: #a3a09b;
+        --ink-meta: #86837e;
+        --ink-faint: #6f6c68;
+        --ink-label: #56545a;
+        --ink-disabled: #4d4b50;
+        --ink-monogram: #b9b6b0;
+
+        --status-failed: #dd6b62;
+        --status-failed-ink: #e58e86;
+        --status-attention: #e3a857; /* text, dots, spines */
+        --status-attention-fill: #e3a857; /* saturated fill — carries -ink on top */
+        --status-attention-ink: #1a1408;
+        --status-attention-hover: #eeb668;
+        --status-working: #6f9bf0;
+        --status-working-dim: #8fb0e8;
+        --status-done: #7fb08a;
+        --status-idle: #4a4950;
+        --status-confidential: #7fa3b8;
+        --status-confidential-strong: #a9c7d8;
+
+        --tint-attention: rgba(227, 168, 87, 0.12);
+        --tint-failed: rgba(221, 107, 98, 0.12);
+        --tint-failed-hover: rgba(221, 107, 98, 0.16);
+
+        --link: #6f9bf0;
+        --link-hover: #9dbcf6;
+      }
+
+      /* ---------- light: the same system on a warm cream canvas ---------- */
+
+      [data-theme="light"] {
+        --surface-canvas: #f7f4ee;
+        --surface-rail: #f1ede4;
+        --surface-rail-alt: #f1ede4;
+        --surface-panel: #fffdf8;
+        --surface-card: #fffdf8;
+        --surface-card-hover: #f3efe6;
+        --surface-selected: #e9e4d8;
+        --surface-hover: #ece7db;
+        --surface-control: #e9e4d8;
+        --surface-control-hover: #e2dccf;
+        --surface-control-active: #d8d0be;
+        --surface-inset: #e3ded1;
+        --surface-attention: #fdf6e6;
+        --surface-confidential: #eaf1f5;
+        --surface-confidential-strong: #dde8ef;
+
+        --line-subtle: #e6e1d6;
+        --line-default: #e3ded1;
+        --line-inset: #e3ded1;
+        --line-strong: #d5cfc0;
+        --line-control: #cbc4b3;
+        --line-attention: #e7ddc5;
+        --line-danger: #dfc2bd;
+        --line-failed: #ecd5d1;
+        --line-confidential: #c2d3dd;
+        --line-accent: #a7bad6;
+
+        --ink-primary: #201f1d;
+        --ink-body: #2b2a27;
+        --ink-secondary: #4a4842;
+        --ink-muted: #6f6c65;
+        --ink-meta: #847f77;
+        --ink-faint: #8b8880;
+        --ink-label: #98948b;
+        --ink-disabled: #a29e95;
+        --ink-monogram: #6a675f;
+
+        --status-failed: #b2342a;
+        --status-failed-ink: #a83e33;
+        --status-attention: #8a5f16; /* dark enough to read on cream */
+        --status-attention-fill: #eab455; /* bright enough to read as a fill */
+        --status-attention-ink: #1a1408;
+        --status-attention-hover: #f2c26c;
+        --status-working: #3f6bc8;
+        --status-working-dim: #4a6fb2;
+        --status-done: #3f7d52;
+        --status-idle: #b0aba0;
+        --status-confidential: #3d6a84;
+        --status-confidential-strong: #325d76;
+
+        --tint-attention: rgba(150, 105, 20, 0.14);
+        --tint-failed: rgba(178, 52, 42, 0.12);
+        --tint-failed-hover: rgba(178, 52, 42, 0.15);
+
+        --link: #3f6bc8;
+        --link-hover: #2f5ab2;
+      }
+
+      /* ---------- 2. Tailwind token map ---------- */
+
+      @theme inline {
+        /* surfaces → bg-surface-card, etc. */
+        --color-surface-canvas: var(--surface-canvas);
+        --color-surface-rail: var(--surface-rail);
+        --color-surface-rail-alt: var(--surface-rail-alt);
+        --color-surface-panel: var(--surface-panel);
+        --color-surface-card: var(--surface-card);
+        --color-surface-card-hover: var(--surface-card-hover);
+        --color-surface-selected: var(--surface-selected);
+        --color-surface-hover: var(--surface-hover);
+        --color-surface-control: var(--surface-control);
+        --color-surface-control-hover: var(--surface-control-hover);
+        --color-surface-control-active: var(--surface-control-active);
+        --color-surface-inset: var(--surface-inset);
+        --color-surface-attention: var(--surface-attention);
+        --color-surface-confidential: var(--surface-confidential);
+        --color-surface-confidential-strong: var(--surface-confidential-strong);
+
+        /* borders → border-line-default, etc. */
+        --color-line-subtle: var(--line-subtle);
+        --color-line-default: var(--line-default);
+        --color-line-inset: var(--line-inset);
+        --color-line-strong: var(--line-strong);
+        --color-line-control: var(--line-control);
+        --color-line-attention: var(--line-attention);
+        --color-line-danger: var(--line-danger);
+        --color-line-failed: var(--line-failed);
+        --color-line-confidential: var(--line-confidential);
+        --color-line-accent: var(--line-accent);
+
+        /* text → text-ink-muted, etc. */
+        --color-ink-primary: var(--ink-primary);
+        --color-ink-body: var(--ink-body);
+        --color-ink-secondary: var(--ink-secondary);
+        --color-ink-muted: var(--ink-muted);
+        --color-ink-meta: var(--ink-meta);
+        --color-ink-faint: var(--ink-faint);
+        --color-ink-label: var(--ink-label);
+        --color-ink-disabled: var(--ink-disabled);
+        --color-ink-monogram: var(--ink-monogram);
+
+        /* state → bg-status-working, text-status-attention, etc. */
+        --color-status-failed: var(--status-failed);
+        --color-status-failed-ink: var(--status-failed-ink);
+        --color-status-attention: var(--status-attention);
+        --color-status-attention-fill: var(--status-attention-fill);
+        --color-status-attention-ink: var(--status-attention-ink);
+        --color-status-attention-hover: var(--status-attention-hover);
+        --color-status-working: var(--status-working);
+        --color-status-working-dim: var(--status-working-dim);
+        --color-status-done: var(--status-done);
+        --color-status-idle: var(--status-idle);
+        --color-status-confidential: var(--status-confidential);
+        --color-status-confidential-strong: var(--status-confidential-strong);
+
+        --color-tint-attention: var(--tint-attention);
+        --color-tint-failed: var(--tint-failed);
+        --color-tint-failed-hover: var(--tint-failed-hover);
+
+        --color-link: var(--link);
+        --color-link-hover: var(--link-hover);
+
+        /* type */
+        --font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+
+        --text-title: 26px;
+        --text-title--line-height: 1.2;
+        --text-title--letter-spacing: -0.3px;
+        --text-heading: 16px;
+        --text-subheading: 15px;
+        --text-body: 14px;
+        --text-body--line-height: 1.5;
+        --text-secondary: 13px;
+        --text-meta: 12px;
+        --text-mono: 11px;
+        --text-mono--line-height: 1.4;
+        --text-label: 10px;
+        --text-label--letter-spacing: 0.7px;
+
+        /* radii — 6 chip · 7 monogram · 8 control · 10 row · 12 card · 14 panel */
+        --radius-chip: 6px;
+        --radius-monogram: 7px;
+        --radius-control: 8px;
+        --radius-row: 10px;
+        --radius-card: 12px;
+        --radius-panel: 14px;
+
+        /* layout — spacing-* drives w-/h-/p-, container-* drives max-w- */
+        --spacing-rail: 252px;
+        --spacing-rail-right: 336px;
+        --spacing-tabbar: 82px;
+        --container-content: 1240px; /* max-w-content */
+        --container-copy: 720px; /* max-w-copy — the prose measure. NOT max-w-prose:
+                                    that is a static Tailwind utility (65ch) and
+                                    cannot be overridden by a theme token. */
+        --container-rail-right: 336px; /* max-w-rail-right */
+
+        /* motion — live work only; idle, failed and done never animate */
+        --animate-pulse-dot: pulseDot 2.4s ease-in-out infinite;
+        --animate-pulse-ring: pulseRing 2.4s ease-out infinite;
+        --animate-bar-slide: barSlide 2.8s ease-in-out infinite;
+
+        @keyframes pulseDot {
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.35;
+            transform: scale(0.82);
+          }
+        }
+        @keyframes pulseRing {
+          0% {
+            opacity: 0.45;
+            transform: scale(0.9);
+          }
+          70%,
+          100% {
+            opacity: 0;
+            transform: scale(2.4);
+          }
+        }
+        @keyframes barSlide {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(320%);
+          }
+        }
+      }
+
+      /* ---------- base ---------- */
+
+      @layer base {
+        html,
+        body {
+          margin: 0;
+          background: var(--surface-canvas);
+          color: var(--ink-primary);
+          /* clip, NOT hidden: overflow-x:hidden turns the page into a scroll
+       container and silently breaks every position:sticky inside it. */
+          overflow-x: clip;
+        }
+        body {
+          font-family: var(--font-sans);
+          font-size: 14px;
+          line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          -webkit-text-size-adjust: 100%;
+        }
+        a {
+          color: var(--link);
+          text-decoration: none;
+        }
+        a:hover {
+          color: var(--link-hover);
+        }
+
+        ::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: var(--line-strong);
+          border-radius: 6px;
+          border: 3px solid var(--surface-canvas);
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation: none !important;
+          }
+        }
+      }
+
+      /* The one breakpoint in the system. Chrome only — content is fluid.
+   Tailwind's own sm/md/lg are unused in this product; use max-mobile:. */
+      @custom-variant mobile (@media (max-width: 900px));
+      @custom-variant desktop (@media (min-width: 901px));
+    </style>
+  </head>
+  <body class="min-h-screen overflow-x-clip bg-surface-canvas text-ink-primary">
+    <div class="flex min-h-screen bg-surface-canvas">
+      <!-- contents -->
+      <aside
+        class="sticky top-0 hidden h-screen w-[228px] flex-[0_0_228px] flex-col border-r border-line-default bg-surface-rail px-3.5 py-6 desktop:flex"
+      >
+        <div class="flex items-center gap-2.5 px-2">
+          <img src="./assets/logo.png" alt="" class="block h-[26px] w-[26px] object-contain" />
+          <div class="text-secondary font-semibold tracking-[0.2px]">Design system</div>
+        </div>
+        <div class="mt-1.5 px-2 font-mono text-label tracking-[0.4px] text-ink-label">
+          TAILWIND V4
+        </div>
+        <nav class="mt-6 flex flex-col gap-px">
+          <a
+            href="#install"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Install</a
+          ><a
+            href="#theming"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Theming</a
+          ><a
+            href="#color"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Color</a
+          ><a
+            href="#type"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Type</a
+          ><a
+            href="#radius"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Radius</a
+          ><a
+            href="#layout"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Layout</a
+          ><a
+            href="#motion"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Motion</a
+          ><a
+            href="#icons"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Icons</a
+          ><a
+            href="#core"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Core components</a
+          ><a
+            href="#patterns"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Patterns</a
+          ><a
+            href="#screens"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Screens</a
+          ><a
+            href="#rules"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Rules</a
+          ><a
+            href="#never"
+            class="rounded-control px-2.5 py-[7px] text-secondary text-ink-muted hover:bg-surface-hover hover:text-ink-primary"
+            >Never</a
+          >
+        </nav>
+        <div class="mt-auto flex flex-col gap-2">
+          <button
+            type="button"
+            id="theme-toggle"
+            class="flex cursor-pointer items-center gap-2 rounded-control border border-line-strong bg-transparent px-2.5 py-2 text-secondary text-ink-secondary hover:bg-surface-hover hover:text-ink-primary"
+          >
+            <i class="ti ti-contrast text-[15px]"></i>Toggle theme
+          </button>
+          <a
+            href="./staff-home.html"
+            class="rounded-control px-2.5 py-[7px] text-meta text-ink-faint hover:text-ink-primary"
+            >← Home reference</a
+          >
+          <a
+            href="./staff-agent-thread.html"
+            class="rounded-control px-2.5 py-[7px] text-meta text-ink-faint hover:text-ink-primary"
+            >← Agent thread</a
+          >
+        </div>
+      </aside>
+
+      <main class="flex min-w-0 flex-1 flex-col bg-surface-canvas">
+        <div
+          class="flex items-center gap-3 border-b border-line-default bg-surface-canvas px-4 py-3 desktop:hidden"
+        >
+          <img src="./assets/logo.png" alt="" class="block h-[24px] w-[24px] object-contain" />
+          <div class="text-secondary font-semibold">Design system</div>
+          <button
+            type="button"
+            id="theme-toggle-m"
+            class="ml-auto grid h-8 w-8 cursor-pointer place-items-center rounded-control border border-line-strong text-ink-muted"
+          >
+            <i class="ti ti-contrast text-[15px]"></i>
+          </button>
+        </div>
+
+        <div
+          class="flex max-w-content flex-col gap-9 px-[clamp(16px,4vw,44px)] pt-[clamp(24px,4vw,40px)] pb-16"
+        >
+          <header>
+            <div class="font-mono text-label tracking-[0.7px] uppercase text-ink-label">
+              Staff · reference for implementers
+            </div>
+            <h1 class="mt-2.5 text-title font-semibold">Tailwind design system</h1>
+            <p class="mt-3 max-w-copy text-body text-ink-muted text-pretty">
+              Every token in the Staff system, the utility that emits it, and the components built
+              from them. If you are generating UI for this product: the palette below is closed — no
+              stock Tailwind colors, no new hexes, no shadows. Copy the class strings verbatim.
+            </p>
+          </header>
+
+          <section id="install" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Install</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              One import. theme.css pulls in Tailwind itself, so do not import Tailwind separately.
+            </p>
+            <div class="mt-5">
+              <pre
+                class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+              ><code>/* app.css — the only stylesheet you need. */
+@import "./tailwind/theme.css";
+
+/* theme.css pulls in Tailwind, IBM Plex Sans + Mono, and the Tabler icon
+   webfont, so there is nothing to add to your document head. Swap its two
+   remote imports for self-hosted @font-face rules in production. */</code></pre>
+            </div>
+          </section>
+
+          <section id="theming" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Theming</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Two layers. The variable layer holds every hex; @theme inline maps those variables
+              into Tailwind namespaces. The inline keyword is load-bearing — without it the dark hex
+              is baked into each utility and light never applies. There is no dark: variant in this
+              system.
+            </p>
+            <div class="mt-5">
+              <pre
+                class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+              ><code>document.documentElement.dataset.theme = "light"; // or "dark"</code></pre>
+            </div>
+          </section>
+
+          <section id="color" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Color</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Color is a status channel, not decoration. Hierarchy comes from ink steps and surface
+              steps; emphasis comes from weight. At rest a screen shows at most one amber block and
+              one red block.
+            </p>
+            <div class="mt-5">
+              <div class="flex flex-col gap-6">
+                <div>
+                  <div
+                    class="font-mono text-label tracking-[0.7px] uppercase text-ink-label mb-2.5"
+                  >
+                    Surfaces — bg-surface-*
+                  </div>
+                  <div
+                    class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,232px),1fr))] gap-2.5"
+                  >
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-canvas)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-canvas
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          page ground
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-rail)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-rail
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          left rail, tab bar
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-rail-alt)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-rail-alt
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          context panel
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-panel)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-panel
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          inset panel, memory note
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-card)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-card
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          cards, rows
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-card-hover)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-card-hover
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          attention rows
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-selected)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-selected
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          active nav item
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-hover)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-hover
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          row hover
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-control)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-control
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          buttons, monograms
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-control-hover)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-control-hover
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          primary button rest
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-control-active)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-control-active
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          primary button hover
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-inset)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-inset
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          progress track, chips
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-attention)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-attention
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          question block ground
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-confidential)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-confidential
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          privacy ground
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--surface-confidential-strong)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-surface-confidential-strong
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          privacy monogram
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="font-mono text-label tracking-[0.7px] uppercase text-ink-label mb-2.5"
+                  >
+                    Borders — border-line-*
+                  </div>
+                  <div
+                    class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,232px),1fr))] gap-2.5"
+                  >
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-subtle)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-subtle
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          list dividers
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-default)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-default
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          card border
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-inset)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-inset
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          nested row border
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-strong)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-strong
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          header rules, controls
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-control)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-control
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          filled button edge
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-attention)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-attention
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          amber card edge
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-danger)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-danger
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          danger button edge
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-failed)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-failed
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          failed card edge
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-confidential)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-confidential
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          privacy edge
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--line-accent)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          border-line-accent
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          card hover edge
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div
+                    class="font-mono text-label tracking-[0.7px] uppercase text-ink-label mb-2.5"
+                  >
+                    Text — text-ink-*
+                  </div>
+                  <div
+                    class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,232px),1fr))] gap-2.5"
+                  >
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-primary)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-primary
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          titles, names
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-body)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-body
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          agent prose
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-secondary)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-secondary
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          row body
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-muted)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-muted
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          supporting copy
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-meta)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-meta
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          metadata
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-faint)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-faint
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          timestamps
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-label)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-label
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          kickers
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-disabled)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-disabled
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          masked text
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--ink-monogram)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          text-ink-monogram
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          monogram letters
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="mt-2.5 max-w-copy text-meta text-ink-faint text-pretty">
+                    Renamed from --text-* because Tailwind v4 reserves that namespace for font
+                    sizes.
+                  </p>
+                </div>
+                <div>
+                  <div
+                    class="font-mono text-label tracking-[0.7px] uppercase text-ink-label mb-2.5"
+                  >
+                    Status — *-status-* and bg-tint-*
+                  </div>
+                  <div
+                    class="grid grid-cols-[repeat(auto-fill,minmax(min(100%,232px),1fr))] gap-2.5"
+                  >
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-working)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-working
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          running now — the only animated state
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-attention)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-attention
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          text, dots, spines
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-attention-fill)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-attention-fill
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          approve buttons, unread badges
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-failed)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-failed
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          stopped, will not retry
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-done)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-done
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          finished
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-idle)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-idle
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          nothing assigned
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-confidential)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-confidential
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          private / local only
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-working-dim)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-working-dim
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          working, secondary text
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-failed-ink)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-failed-ink
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          failed text on tint
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-attention-ink)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-attention-ink
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          text on amber fill
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--tint-attention)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-tint-attention
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          amber 12% wash
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--tint-failed)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-tint-failed
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          red 12% wash
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      class="flex items-center gap-3 rounded-row border border-line-inset bg-surface-panel p-2.5"
+                    >
+                      <div
+                        class="h-9 w-9 shrink-0 rounded-monogram border border-line-strong"
+                        style="background: var(--status-confidential-strong)"
+                      ></div>
+                      <div class="min-w-0">
+                        <div class="truncate font-mono text-mono text-ink-primary">
+                          bg-status-confidential-strong
+                        </div>
+                        <div class="mt-[3px] truncate font-mono text-[10px] text-ink-faint">
+                          privacy emphasis
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="type" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Type</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              IBM Plex Sans for language, IBM Plex Mono for machine facts — ids, counts, durations,
+              exit codes, tool and scope names. Weights: 400, 500, 600. Nothing is bold for emphasis
+              alone.
+            </p>
+            <div class="mt-5">
+              <div
+                class="rounded-card border border-line-default bg-surface-card divide-y divide-line-subtle"
+              >
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-title
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-title font-semibold text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">
+                    26px / 1.2 / -0.3px
+                  </div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">
+                    page title — one per screen
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-heading
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-heading font-semibold text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">16px</div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">section heading</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-subheading
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-subheading text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">15px</div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">
+                    panel title, agent name
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-body
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-body text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">14px</div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">default body, messages</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-secondary
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-secondary text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">13px</div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">row copy, buttons</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-meta
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-meta text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">12px</div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">metadata, helper copy</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-mono
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-mono font-mono text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">11px</div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">
+                    machine facts, counters
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 px-4 py-3.5">
+                  <div class="flex-[0_0_150px] font-mono text-mono text-ink-secondary">
+                    text-label
+                  </div>
+                  <div class="min-w-0 flex-[1_1_220px] text-label font-mono text-ink-primary">
+                    Marta’s 1:1 brief
+                  </div>
+                  <div class="flex-[0_0_170px] font-mono text-[10px] text-ink-faint">
+                    10px / 0.7px
+                  </div>
+                  <div class="flex-[1_1_160px] text-meta text-ink-meta">
+                    kickers, badges, monograms
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="radius" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Radius</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Six steps, chosen by element size. Nothing is fully round except dots and badges.
+            </p>
+            <div class="mt-5">
+              <div class="flex flex-wrap gap-3">
+                <div class="flex flex-col items-center gap-2">
+                  <div
+                    class="grid h-16 w-16 place-items-center border border-line-strong bg-surface-control rounded-chip"
+                  ></div>
+                  <div class="font-mono text-mono text-ink-secondary">rounded-chip</div>
+                  <div class="font-mono text-[10px] text-ink-faint">6px</div>
+                  <div class="max-w-[110px] text-center text-[10px] text-ink-meta">tool chips</div>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                  <div
+                    class="grid h-16 w-16 place-items-center border border-line-strong bg-surface-control rounded-monogram"
+                  ></div>
+                  <div class="font-mono text-mono text-ink-secondary">rounded-monogram</div>
+                  <div class="font-mono text-[10px] text-ink-faint">7px</div>
+                  <div class="max-w-[110px] text-center text-[10px] text-ink-meta">
+                    avatars, type badges
+                  </div>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                  <div
+                    class="grid h-16 w-16 place-items-center border border-line-strong bg-surface-control rounded-control"
+                  ></div>
+                  <div class="font-mono text-mono text-ink-secondary">rounded-control</div>
+                  <div class="font-mono text-[10px] text-ink-faint">8px</div>
+                  <div class="max-w-[110px] text-center text-[10px] text-ink-meta">
+                    buttons, nav items
+                  </div>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                  <div
+                    class="grid h-16 w-16 place-items-center border border-line-strong bg-surface-control rounded-row"
+                  ></div>
+                  <div class="font-mono text-mono text-ink-secondary">rounded-row</div>
+                  <div class="font-mono text-[10px] text-ink-faint">10px</div>
+                  <div class="max-w-[110px] text-center text-[10px] text-ink-meta">
+                    list rows, artifacts
+                  </div>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                  <div
+                    class="grid h-16 w-16 place-items-center border border-line-strong bg-surface-control rounded-card"
+                  ></div>
+                  <div class="font-mono text-mono text-ink-secondary">rounded-card</div>
+                  <div class="font-mono text-[10px] text-ink-faint">12px</div>
+                  <div class="max-w-[110px] text-center text-[10px] text-ink-meta">cards</div>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                  <div
+                    class="grid h-16 w-16 place-items-center border border-line-strong bg-surface-control rounded-panel"
+                  ></div>
+                  <div class="font-mono text-mono text-ink-secondary">rounded-panel</div>
+                  <div class="font-mono text-[10px] text-ink-faint">14px</div>
+                  <div class="max-w-[110px] text-center text-[10px] text-ink-meta">composer</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="layout" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Layout</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              One breakpoint, and it governs chrome only: the rail becomes a top bar plus bottom tab
+              bar. Content is fluid — flex-wrap with flex-basis, clamp() padding, and auto-fit
+              grids. Tailwind’s sm: md: lg: xl: are unused here.
+            </p>
+            <div class="mt-5">
+              <div
+                class="rounded-card border border-line-default bg-surface-card divide-y divide-line-subtle"
+              >
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3">
+                  <div class="flex-[0_0_170px] font-mono text-mono text-ink-secondary">w-rail</div>
+                  <div class="flex-[0_0_80px] font-mono text-[10px] text-ink-faint">252px</div>
+                  <div class="flex-[1_1_200px] text-meta text-ink-meta">left rail width</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3">
+                  <div class="flex-[0_0_170px] font-mono text-mono text-ink-secondary">
+                    h-tabbar
+                  </div>
+                  <div class="flex-[0_0_80px] font-mono text-[10px] text-ink-faint">82px</div>
+                  <div class="flex-[1_1_200px] text-meta text-ink-meta">mobile tab bar</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3">
+                  <div class="flex-[0_0_170px] font-mono text-mono text-ink-secondary">
+                    max-w-content
+                  </div>
+                  <div class="flex-[0_0_80px] font-mono text-[10px] text-ink-faint">1240px</div>
+                  <div class="flex-[1_1_200px] text-meta text-ink-meta">screen content cap</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3">
+                  <div class="flex-[0_0_170px] font-mono text-mono text-ink-secondary">
+                    max-w-copy
+                  </div>
+                  <div class="flex-[0_0_80px] font-mono text-[10px] text-ink-faint">720px</div>
+                  <div class="flex-[1_1_200px] text-meta text-ink-meta">prose measure</div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3">
+                  <div class="flex-[0_0_170px] font-mono text-mono text-ink-secondary">
+                    max-w-rail-right
+                  </div>
+                  <div class="flex-[0_0_80px] font-mono text-[10px] text-ink-faint">336px</div>
+                  <div class="flex-[1_1_200px] text-meta text-ink-meta">context panel</div>
+                </div>
+              </div>
+              <div class="mt-3.5 flex flex-col gap-2.5">
+                <pre
+                  class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                ><code>&lt;!-- chrome swap: the only breakpoint (900px) --&gt;
+&lt;aside class="hidden desktop:flex"&gt;…&lt;/aside&gt;
+&lt;div class="desktop:hidden"&gt;…&lt;/div&gt;</code></pre>
+                <pre
+                  class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                ><code>&lt;!-- fluid content: no breakpoint needed --&gt;
+&lt;div class="grid gap-3 grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))]"&gt;
+&lt;div class="px-[clamp(16px,4vw,48px)]"&gt;
+&lt;div class="flex flex-wrap"&gt;&lt;div class="flex-[1_1_340px]"&gt;</code></pre>
+              </div>
+              <p class="mt-3 max-w-copy text-meta text-ink-faint text-pretty">
+                Arbitrary values are correct here. This system’s spacing (18px card padding, 13px
+                gaps, 7px dots) predates Tailwind’s 4px scale — p-[18px] is honest; do not round it
+                to p-5.
+              </p>
+            </div>
+          </section>
+
+          <section id="motion" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Motion</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Motion means work is happening right now. Idle, done and failed never animate; nothing
+              has an entrance animation; hover changes color, never geometry. All three respect
+              prefers-reduced-motion.
+            </p>
+            <div class="mt-5">
+              <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-2.5">
+                <div
+                  class="rounded-card border border-line-default bg-surface-card flex items-center gap-3.5 p-4"
+                >
+                  <span class="relative h-[9px] w-[9px] shrink-0"
+                    ><span
+                      class="absolute inset-0 animate-pulse-dot rounded-full bg-status-working"
+                    ></span
+                  ></span>
+                  <div>
+                    <div class="font-mono text-mono text-ink-secondary">animate-pulse-dot</div>
+                    <div class="mt-0.5 text-[10px] text-ink-meta">2.4s · working dot</div>
+                  </div>
+                </div>
+                <div
+                  class="rounded-card border border-line-default bg-surface-card flex items-center gap-3.5 p-4"
+                >
+                  <span class="relative h-[9px] w-[9px] shrink-0"
+                    ><span
+                      class="absolute inset-0 animate-pulse-dot rounded-full bg-status-working"
+                    ></span
+                    ><span
+                      class="absolute inset-0 animate-pulse-ring rounded-full border border-status-working"
+                    ></span
+                  ></span>
+                  <div>
+                    <div class="font-mono text-mono text-ink-secondary">animate-pulse-ring</div>
+                    <div class="mt-0.5 text-[10px] text-ink-meta">2.4s · active agent in rail</div>
+                  </div>
+                </div>
+                <div class="rounded-card border border-line-default bg-surface-card p-4">
+                  <div class="h-0.5 overflow-hidden rounded-[2px] bg-surface-inset">
+                    <div class="h-full w-[30%] animate-bar-slide bg-status-working"></div>
+                  </div>
+                  <div class="mt-3 font-mono text-mono text-ink-secondary">animate-bar-slide</div>
+                  <div class="mt-0.5 text-[10px] text-ink-meta">2.8s · unknown extent</div>
+                </div>
+              </div>
+              <div class="mt-3.5">
+                <pre
+                  class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                ><code>transition-[background-color,color,border-color] duration-[120ms] ease-out  /* the only transition */</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="icons" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Icons</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Tabler Icons webfont, inheriting currentColor. Icons appear in navigation and controls
+              only — never as a status indicator (status is a dot) and never as decoration beside a
+              heading. Agents are monograms, never icons or photos.
+            </p>
+            <div class="mt-5">
+              <div class="flex flex-wrap gap-2.5">
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-home text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-home</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-users text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-users</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-clipboard-list text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-clipboard-list</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-inbox text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-inbox</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-calendar-clock text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-calendar-clock</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-notes text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-notes</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-list-search text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-list-search</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-palette text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-palette</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-settings text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-settings</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-dots text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-dots</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-contrast text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-contrast</span>
+                </div>
+                <div
+                  class="flex items-center gap-2.5 rounded-row border border-line-inset bg-surface-panel px-3 py-2.5"
+                >
+                  <i class="ti ti-chevron-left text-[17px] text-ink-secondary"></i
+                  ><span class="font-mono text-[10px] text-ink-faint">ti-chevron-left</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="core" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Core components</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Nine primitives. Props are unchanged from the inline-style build; only Button differs
+              — it takes className instead of style.
+            </p>
+            <div class="mt-5">
+              <div class="flex flex-col gap-3.5">
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      StatusDot
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      The single status vocabulary. A dot, never a glyph, never a colored label.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div class="flex items-center gap-2.5">
+                      <span class="relative h-[7px] w-[7px]"
+                        ><span
+                          class="absolute inset-0 rounded-full bg-status-working animate-pulse-dot"
+                        ></span></span
+                      ><span class="font-mono text-mono text-ink-faint">working</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                      <span class="relative h-[7px] w-[7px]"
+                        ><span
+                          class="absolute inset-0 rounded-full bg-status-attention"
+                        ></span></span
+                      ><span class="font-mono text-mono text-ink-faint">attention</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                      <span class="relative h-[7px] w-[7px]"
+                        ><span class="absolute inset-0 rounded-full bg-status-failed"></span></span
+                      ><span class="font-mono text-mono text-ink-faint">failed</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                      <span class="relative h-[7px] w-[7px]"
+                        ><span class="absolute inset-0 rounded-full bg-status-done"></span></span
+                      ><span class="font-mono text-mono text-ink-faint">done</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                      <span class="relative h-[7px] w-[7px]"
+                        ><span class="absolute inset-0 rounded-full bg-status-idle"></span></span
+                      ><span class="font-mono text-mono text-ink-faint">idle</span>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                      <span class="relative h-[7px] w-[7px]"
+                        ><span
+                          class="absolute inset-0 rounded-full bg-status-confidential"
+                        ></span></span
+                      ><span class="font-mono text-mono text-ink-faint">confidential</span>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>&lt;span class="relative inline-block h-[7px] w-[7px] shrink-0"&gt;
+  &lt;span class="absolute inset-0 rounded-full bg-status-working animate-pulse-dot"&gt;&lt;/span&gt;
+  &lt;span class="absolute inset-0 rounded-full border border-status-working animate-pulse-ring"&gt;&lt;/span&gt;
+&lt;/span&gt;</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Only working animates. The ring is for the active agent in the rail.
+                      </li>
+                      <li class="list-disc text-pretty">
+                        Size comes through style={{width,height}} — a runtime prop, one of the few
+                        legitimate inline styles.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">Avatar</div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Two-letter monogram with optional status pip. There is no photography in this
+                      product.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <span
+                      class="grid h-6 w-6 place-items-center rounded-monogram bg-surface-control font-mono text-label text-ink-monogram"
+                      >ST</span
+                    >
+                    <span
+                      class="grid h-[26px] w-[26px] place-items-center rounded-monogram bg-surface-control font-mono text-label text-ink-monogram"
+                      >DE</span
+                    >
+                    <div class="relative">
+                      <span
+                        class="grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-surface-control font-mono text-mono text-ink-monogram"
+                        >LE</span
+                      ><span
+                        class="absolute -right-[3px] -bottom-[3px] grid h-2.5 w-2.5 place-items-center rounded-full border-2 border-surface-canvas"
+                        ><span
+                          class="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-status-working"
+                        ></span
+                      ></span>
+                    </div>
+                    <span
+                      class="grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-line-subtle font-mono text-mono text-ink-faint"
+                      >PM</span
+                    >
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>sm  w-6 h-6 text-label rounded-monogram
+md  w-[26px] h-[26px] text-label rounded-monogram
+lg  w-[34px] h-[34px] text-mono rounded-[9px]
+idle  bg-line-subtle text-ink-faint</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        The pip’s border color matches the surface behind it — pass ringColor, do
+                        not hardcode.
+                      </li>
+                      <li class="list-disc text-pretty">
+                        Idle agents recede one ink step; they never disappear.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">Button</div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Buttons are verbs. At most one amber approve per screen — the only saturated
+                      fill in the system.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <button
+                      type="button"
+                      class="cursor-pointer rounded-control bg-status-attention-fill px-[15px] py-2 text-secondary font-semibold text-status-attention-ink hover:bg-status-attention-hover"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      class="cursor-pointer rounded-control border border-line-control bg-surface-control-hover px-[15px] py-2 text-secondary font-medium text-ink-primary hover:bg-surface-control-active"
+                    >
+                      Answer
+                    </button>
+                    <button
+                      type="button"
+                      class="cursor-pointer rounded-control border border-line-strong px-[13px] py-2 text-secondary text-ink-secondary hover:bg-surface-selected"
+                    >
+                      Review
+                    </button>
+                    <button
+                      type="button"
+                      class="cursor-pointer rounded-control px-[13px] py-2 text-secondary text-ink-muted hover:text-ink-primary"
+                    >
+                      Later
+                    </button>
+                    <button
+                      type="button"
+                      class="cursor-pointer rounded-control border border-line-danger bg-tint-failed px-[13px] py-2 text-secondary font-medium text-status-failed-ink hover:bg-tint-failed-hover"
+                    >
+                      Retry 8 sources
+                    </button>
+                    <button
+                      type="button"
+                      disabled
+                      class="cursor-default rounded-control border border-line-control bg-surface-control px-[15px] py-2 text-secondary font-medium text-ink-meta opacity-55"
+                    >
+                      Send
+                    </button>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>approve    bg-status-attention-fill text-status-attention-ink font-semibold hover:bg-status-attention-hover px-[15px]
+primary    bg-surface-control-hover border-line-control text-ink-primary font-medium hover:bg-surface-control-active px-[15px]
+secondary  border-line-strong text-ink-secondary hover:bg-surface-selected px-[13px]
+ghost      text-ink-muted hover:text-ink-primary px-[13px]
+danger     bg-tint-failed border-line-danger text-status-failed-ink hover:bg-tint-failed-hover px-[13px]
+
+all: rounded-control py-2 text-secondary transition-[background-color,color,border-color] duration-[120ms] ease-out</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Label the specific action — “Retry 8 sources”, not “Retry”.
+                      </li>
+                      <li class="list-disc text-pretty">
+                        Nothing transforms on press. No scale, no translate.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      KindChip / ToolChip / PrivacyBadge / UnreadBadge
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Mono labels. Kind says what a row is; tool chips name machine scopes; privacy
+                      is teal, never red.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <span
+                      class="rounded-[5px] bg-tint-attention px-[7px] py-[3px] font-mono text-label tracking-[0.6px] text-status-attention"
+                      >DECISION</span
+                    >
+                    <span
+                      class="rounded-[5px] bg-tint-failed px-[7px] py-[3px] font-mono text-label tracking-[0.6px] text-status-failed"
+                      >FAILED</span
+                    >
+                    <span
+                      class="rounded-[5px] border border-line-strong bg-line-subtle px-[7px] py-[3px] font-mono text-label tracking-[0.6px] text-ink-muted"
+                      >HANDOFF</span
+                    >
+                    <span
+                      class="rounded-chip border border-line-strong bg-line-subtle px-[9px] py-[5px] font-mono text-mono text-ink-muted"
+                      >github:read</span
+                    >
+                    <span
+                      class="inline-flex items-center gap-1.5 rounded-[5px] border border-line-confidential bg-surface-confidential px-2 py-[3px] font-mono text-label text-status-confidential"
+                      ><span class="h-[5px] w-[5px] rounded-full bg-status-confidential"></span
+                      >CONFIDENTIAL</span
+                    >
+                    <span
+                      class="grid h-[17px] min-w-[17px] place-items-center rounded-[9px] bg-status-attention-fill px-[5px] text-label font-semibold text-status-attention-ink"
+                      >2</span
+                    >
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>kind attention  bg-tint-attention text-status-attention
+kind failed     bg-tint-failed text-status-failed
+kind neutral    bg-line-subtle text-ink-muted border-line-strong
+tool            rounded-chip border-line-strong bg-line-subtle text-mono text-ink-muted
+privacy         border-line-confidential bg-surface-confidential text-status-confidential
+unread          bg-status-attention text-status-attention-ink text-label font-semibold</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Privacy copy describes mechanics and reassures — it does not warn. No shield
+                        icons.
+                      </li>
+                      <li class="list-disc text-pretty">
+                        Unread is amber because an unread message is something waiting on you.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      ProgressBar
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      2px. A known extent fills; an unknown extent slides.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div class="w-full max-w-[280px]">
+                      <div class="h-0.5 overflow-hidden rounded-[2px] bg-surface-inset">
+                        <div class="h-full w-[62%] bg-status-working"></div>
+                      </div>
+                      <div class="mt-2.5 font-mono text-mono text-ink-faint">
+                        184/297 line items
+                      </div>
+                    </div>
+                    <div class="w-full max-w-[280px]">
+                      <div class="h-0.5 overflow-hidden rounded-[2px] bg-surface-inset">
+                        <div class="h-full w-[30%] animate-bar-slide bg-status-working"></div>
+                      </div>
+                      <div class="mt-2.5 font-mono text-mono text-ink-faint">
+                        step 4/6 · extent unknown
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>&lt;div class="h-0.5 overflow-hidden rounded-[2px] bg-surface-inset"&gt;
+  &lt;div class="h-full bg-status-working" style="width:62%"&gt;&lt;/div&gt;          &lt;!-- value --&gt;
+  &lt;div class="h-full w-[30%] bg-status-working animate-bar-slide"&gt;&lt;/div&gt;  &lt;!-- value={null} --&gt;
+&lt;/div&gt;</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Always pair the bar with a mono line saying what the number counts.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      SectionHeader
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Uppercase kicker, hairline fading from a status tint, optional mono count.
+                      This rhythm repeats on every screen.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div class="w-full max-w-[520px] flex flex-col gap-4">
+                      <div class="flex items-center gap-3">
+                        <div
+                          class="text-meta font-semibold tracking-[0.8px] uppercase text-status-attention"
+                        >
+                          Needs you
+                        </div>
+                        <div
+                          class="h-px flex-1 bg-gradient-to-r from-line-attention to-line-subtle"
+                        ></div>
+                        <div class="font-mono text-mono text-ink-faint">3 open · 1 failure</div>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <div
+                          class="text-meta font-semibold tracking-[0.8px] uppercase text-status-working-dim"
+                        >
+                          Working now
+                        </div>
+                        <div
+                          class="h-px flex-1 bg-gradient-to-r from-line-accent to-line-subtle"
+                        ></div>
+                        <div class="font-mono text-mono text-ink-faint">4 jobs · 3 agents</div>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <div
+                          class="text-meta font-semibold tracking-[0.8px] uppercase text-ink-meta"
+                        >
+                          Recent outcomes
+                        </div>
+                        <div class="h-px flex-1 bg-line-subtle"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>attention  text-status-attention   from-line-attention
+working    text-status-working-dim from-line-accent
+neutral    text-ink-meta           bg-line-subtle (no gradient)
+
+label: text-meta font-semibold tracking-[0.8px] uppercase</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        The count is context, not a metric — say what it counts, never a bare
+                        number.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="patterns" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Patterns</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              Ten composed rows and cards. These carry the product’s argument: exceptions first,
+              then live work, then outcomes.
+            </p>
+            <div class="mt-5">
+              <div class="flex flex-col gap-3.5">
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      AttentionRow
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      The most important object in the product. A 3px status spine as a grid column,
+                      so it never rounds oddly.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div
+                      class="w-full grid grid-cols-[3px_minmax(0,1fr)] overflow-hidden rounded-card border border-line-attention bg-surface-card-hover"
+                    >
+                      <div class="bg-status-attention"></div>
+                      <div
+                        class="flex flex-wrap items-center gap-x-[18px] gap-y-3.5 px-5 py-[18px]"
+                      >
+                        <div class="min-w-0 flex-[1_1_340px]">
+                          <div class="flex flex-wrap items-center gap-2.5">
+                            <span
+                              class="rounded-[5px] bg-tint-attention px-[7px] py-[3px] font-mono text-label tracking-[0.6px] text-status-attention"
+                              >DECISION</span
+                            ><span class="font-semibold"
+                              >Deploy api-gateway v2.14 to production</span
+                            >
+                          </div>
+                          <p class="mt-2 max-w-copy text-secondary text-ink-muted text-pretty">
+                            Devops finished the canary at 5% for 40 minutes with no error-rate
+                            change. Needs your go-ahead before the full rollout.
+                          </p>
+                          <div
+                            class="mt-3 flex flex-wrap items-center gap-3.5 text-meta text-ink-faint"
+                          >
+                            <span>Devops</span><span>waiting 1h 04m</span
+                            ><span class="font-mono">job #4192</span>
+                          </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            class="cursor-pointer rounded-control border border-line-strong px-[13px] py-2 text-secondary text-ink-muted"
+                          >
+                            Later</button
+                          ><button
+                            type="button"
+                            class="cursor-pointer rounded-control bg-status-attention-fill px-[15px] py-2 text-secondary font-semibold text-status-attention-ink"
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>&lt;div class="grid grid-cols-[3px_minmax(0,1fr)] overflow-hidden rounded-card border border-line-attention bg-surface-card-hover"&gt;
+  &lt;div class="bg-status-attention"&gt;&lt;/div&gt;
+  &lt;div class="flex flex-wrap items-center gap-x-[18px] gap-y-3.5 px-5 py-[18px]"&gt;
+    &lt;div class="min-w-0 flex-[1_1_340px]"&gt;…&lt;/div&gt;
+    &lt;div class="flex flex-wrap gap-2"&gt;…actions&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+failed: border-line-failed + bg-status-failed spine</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Copy answers three questions in order: what stopped, why, what happens if
+                        you act.
+                      </li>
+                      <li class="list-disc text-pretty">
+                        flex-wrap plus flex-[1_1_340px] is what makes actions drop below the copy on
+                        narrow screens — no breakpoint.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      AgentWorkCard
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Live work. Cards raise their border on hover — they never lift or scale.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div
+                      class="w-full max-w-[320px] cursor-pointer rounded-card border border-line-default bg-surface-card p-[18px] transition-colors duration-[120ms] ease-out hover:border-line-accent"
+                    >
+                      <div class="flex items-center gap-2.5">
+                        <span
+                          class="grid h-[26px] w-[26px] place-items-center rounded-monogram bg-surface-control font-mono text-label text-ink-monogram"
+                          >ST</span
+                        ><span class="font-semibold">Steward</span
+                        ><span
+                          class="ml-auto h-[7px] w-[7px] animate-pulse-dot rounded-full bg-status-working"
+                        ></span>
+                      </div>
+                      <div class="mt-3.5 text-secondary text-ink-body">
+                        Preparing Marta’s 1:1 brief
+                      </div>
+                      <div class="mt-2.5 h-0.5 overflow-hidden rounded-[2px] bg-surface-inset">
+                        <div class="h-full w-[30%] animate-bar-slide bg-status-working"></div>
+                      </div>
+                      <div class="mt-3 flex justify-between font-mono text-mono text-ink-faint">
+                        <span>step 4/6</span><span>6m 12s</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>rounded-card border border-line-default bg-surface-card p-[18px]
+transition-colors duration-[120ms] ease-out hover:border-line-accent
+
+grid: grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] gap-3</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Say what the agent is doing in plain language, then the machine detail in
+                        mono beneath.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      RosterRow
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      The staff list. Three tracks that collapse by flex-basis, not a breakpoint.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div
+                      class="w-full rounded-card border border-line-default bg-surface-card overflow-hidden"
+                    >
+                      <div
+                        class="flex flex-wrap items-center gap-4 border-b border-line-subtle px-5 py-4"
+                      >
+                        <div class="flex min-w-0 flex-[1_1_260px] items-center gap-[13px]">
+                          <div class="relative">
+                            <span
+                              class="grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-surface-control font-mono text-mono text-ink-monogram"
+                              >DE</span
+                            ><span
+                              class="absolute -right-[3px] -bottom-[3px] grid h-2.5 w-2.5 place-items-center rounded-full border-2 border-surface-card"
+                              ><span class="h-1.5 w-1.5 rounded-full bg-status-attention"></span
+                            ></span>
+                          </div>
+                          <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                              <span class="font-semibold">Devops</span
+                              ><span
+                                class="grid h-[17px] min-w-[17px] place-items-center rounded-[9px] bg-status-attention-fill px-[5px] text-label font-semibold text-status-attention-ink"
+                                >2</span
+                              >
+                            </div>
+                            <div class="mt-0.5 text-meta text-ink-meta">
+                              Deploys &amp; incidents
+                            </div>
+                          </div>
+                        </div>
+                        <div class="flex-[1_1_190px] text-secondary text-ink-secondary">
+                          Canary at 5%, waiting on you
+                          <div class="mt-[3px] font-mono text-mono text-status-attention">
+                            needs approval · 1h 04m
+                          </div>
+                        </div>
+                        <div class="flex-[0_0_110px] text-right font-mono text-mono text-ink-faint">
+                          4 tools
+                        </div>
+                      </div>
+                      <div class="flex flex-wrap items-center gap-4 px-5 py-4">
+                        <div class="flex min-w-0 flex-[1_1_260px] items-center gap-[13px]">
+                          <span
+                            class="grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-line-subtle font-mono text-mono text-ink-faint"
+                            >PM</span
+                          >
+                          <div class="min-w-0">
+                            <div class="font-medium text-ink-muted">PM</div>
+                            <div class="mt-0.5 text-meta text-ink-faint">Roadmap &amp; specs</div>
+                          </div>
+                        </div>
+                        <div class="flex-[1_1_190px] text-secondary text-ink-faint">
+                          Nothing assigned
+                          <div class="mt-[3px] font-mono text-mono text-ink-label">idle · 6h</div>
+                        </div>
+                        <div class="flex-[0_0_110px] text-right font-mono text-mono text-ink-faint">
+                          2 tools
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>row:   flex flex-wrap items-center gap-4 border-b border-line-subtle px-5 py-4 hover:bg-surface-hover
+idle:  text-ink-muted / text-ink-faint / text-ink-label
+state: text-status-{failed|attention|working} · idle → text-ink-label</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Idle is a legitimate state, shown plainly — never styled as a problem.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      ProposalRow
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Nothing becomes durable without an explicit approval. After a decision the row
+                      states what happened and stays undoable.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div
+                      class="w-full flex flex-wrap items-start gap-4 rounded-card border border-line-default bg-surface-card px-5 py-[18px]"
+                    >
+                      <div class="min-w-0 flex-[1_1_340px]">
+                        <div class="flex flex-wrap items-center gap-[9px]">
+                          <span
+                            class="rounded-[5px] border border-line-strong bg-line-subtle px-[7px] py-[3px] font-mono text-label tracking-[0.6px] text-ink-muted"
+                            >MEMORY</span
+                          ><span class="font-semibold">Remember Marta’s agenda preference</span
+                          ><span class="font-mono text-label text-status-confidential"
+                            >private</span
+                          >
+                        </div>
+                        <p class="mt-[9px] text-secondary text-ink-muted text-pretty">
+                          Written agendas 24h ahead; no surprises in 1:1s.
+                        </p>
+                        <div class="mt-[11px] font-mono text-mono text-ink-label">
+                          → memory / 1-1-cadence
+                        </div>
+                      </div>
+                      <div class="flex shrink-0 items-center gap-2.5">
+                        <span
+                          class="flex items-center gap-[7px] font-mono text-mono text-status-done"
+                          ><span class="h-1.5 w-1.5 rounded-full bg-status-done"></span>SAVED</span
+                        ><button
+                          type="button"
+                          class="cursor-pointer rounded-control px-[13px] py-2 text-secondary text-ink-muted hover:text-ink-primary"
+                        >
+                          Undo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>undecided: Reject · Edit · Approve  (secondary, secondary, primary)
+decided:   mono SAVED / REJECTED + ghost Undo
+saved dot: bg-status-done   rejected dot: bg-ink-faint</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Always name the destination in mono — the operator should see where a thing
+                        will land.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      Message / Composer
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      The operator’s bubble is the only asymmetric radius in the system. Agent turns
+                      are unbubbled — they are output, not chat. Timestamps are HH:MM only — the day
+                      comes from the thread’s date divider.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div class="flex w-full max-w-[560px] flex-col gap-4">
+                      <div class="flex max-w-[88%] flex-col items-end gap-1.5 self-end">
+                        <div
+                          class="rounded-[14px_14px_4px_14px] bg-surface-control px-[17px] py-[13px] text-body"
+                        >
+                          Put together a brief for Marta’s 1:1.
+                        </div>
+                        <time
+                          datetime="2026-08-30T09:02"
+                          class="px-1 font-mono text-label text-ink-disabled"
+                          >09:02</time
+                        >
+                      </div>
+                      <div class="flex gap-3.5">
+                        <span
+                          class="grid h-7 w-7 shrink-0 place-items-center rounded-control bg-surface-control font-mono text-label text-ink-monogram"
+                          >ST</span
+                        >
+                        <div class="flex min-w-0 flex-col gap-2">
+                          <time
+                            datetime="2026-08-30T09:02"
+                            class="font-mono text-label text-ink-disabled"
+                            >09:02</time
+                          >
+                          <p class="text-body text-ink-body text-pretty">
+                            Starting now. I’ll keep the private material separate from anything
+                            shareable.
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        class="flex items-center gap-3.5 rounded-panel border border-line-strong bg-surface-card px-4 py-3.5"
+                      >
+                        <span
+                          class="flex items-center gap-2 rounded-[9px] border border-line-strong bg-surface-inset px-[11px] py-[7px] text-secondary"
+                          >ST Steward <span class="text-mono text-ink-faint">▾</span></span
+                        >
+                        <span class="flex-1 text-body text-ink-label">Message Steward…</span>
+                        <button
+                          type="button"
+                          disabled
+                          class="cursor-default rounded-control border border-line-control bg-surface-control-hover px-3.5 py-[7px] text-secondary font-medium text-ink-meta opacity-55"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>operator: self-end rounded-[14px_14px_4px_14px] bg-surface-control px-[17px] py-[13px]
+agent:    flex gap-3.5 + text-ink-body (no bubble)
+time:     &lt;time&gt; font-mono text-label text-ink-disabled (HH:MM)
+composer: rounded-panel border-line-strong bg-surface-card px-4 py-3.5
+input:    bg-transparent outline-none placeholder:text-ink-label</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        Work is always addressed to a named agent, so the picker lives in the
+                        composer.
+                      </li>
+                      <li class="list-disc text-pretty">
+                        Send stays disabled until there is text.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div
+                  class="rounded-card border border-line-default bg-surface-card overflow-hidden"
+                >
+                  <div
+                    class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                  >
+                    <div class="font-mono text-secondary font-medium text-ink-primary">
+                      ArtifactRow / MemoryNote / DropZone
+                    </div>
+                    <div class="text-meta text-ink-meta text-pretty">
+                      Outputs, remembered facts, and the one dashed border in the system.
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 bg-surface-canvas px-4 py-6">
+                    <div class="flex w-full max-w-[420px] flex-col gap-2.5">
+                      <div
+                        class="flex items-center gap-[11px] rounded-row border border-line-inset bg-surface-card-hover px-3 py-[11px]"
+                      >
+                        <span
+                          class="grid h-[26px] w-[26px] place-items-center rounded-monogram bg-surface-control font-mono text-[9px] text-ink-monogram"
+                          >DIF</span
+                        ><span class="text-secondary"
+                          >api-gateway-v2.14.diff<span
+                            class="mt-0.5 block font-mono text-mono text-ink-faint"
+                            >312 lines · 4 files</span
+                          ></span
+                        >
+                      </div>
+                      <div
+                        class="rounded-[11px] border border-line-inset bg-surface-panel px-3.5 py-3"
+                      >
+                        <div class="font-mono text-mono text-status-working-dim">1-1-cadence</div>
+                        <div class="mt-1.5 text-meta text-ink-muted">
+                          Marta prefers written agendas 24h ahead.
+                        </div>
+                      </div>
+                      <div
+                        class="rounded-[11px] border border-line-inset bg-surface-panel px-3.5 py-3"
+                      >
+                        <div class="flex items-center gap-[7px]">
+                          <div class="font-mono text-mono text-status-working-dim">
+                            comp-discussions
+                          </div>
+                          <div
+                            class="rounded-[4px] border border-line-confidential bg-surface-confidential px-[5px] py-0.5 font-mono text-[9px] text-status-confidential"
+                          >
+                            SEALED
+                          </div>
+                        </div>
+                        <div class="mt-1.5 text-meta tracking-[0.5px] text-ink-disabled">
+                          •••••••• •••• ••••••••• ••• ••••••
+                        </div>
+                      </div>
+                      <div
+                        class="cursor-pointer rounded-card border border-dashed border-line-strong p-4 text-center text-secondary text-ink-meta"
+                      >
+                        Drop a file, or paste text
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-t border-line-subtle p-3.5">
+                    <pre
+                      class="overflow-x-auto rounded-row border border-line-inset bg-surface-panel px-3.5 py-3 font-mono text-mono text-ink-secondary"
+                    ><code>artifact type badge: 3 letters, mono text-[9px] — DIF LOG MD TXT PDF
+sealed note: text-ink-disabled tracking-[0.5px] + bullet run (never blur)
+dropzone: border-dashed border-line-strong — the only dashed line</code></pre>
+                    <ul class="mt-2.5 flex flex-col gap-1.5 pl-4 text-meta text-ink-muted">
+                      <li class="list-disc text-pretty">
+                        A sealed note shows its key and its existence, never its content.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="screens" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Screens</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              The two reference builds, live and to scale. Read these for composition — how the
+              primitives above stack into a screen, what order sections appear in, and where the
+              chrome sits. Load either one to see it live; each embed is a separate document that
+              compiles its own styles, so they load on request rather than all at once. They follow
+              the theme toggle — it is passed to them on load and on every change.
+            </p>
+            <div class="mt-5 flex flex-col gap-3.5">
+              <div class="rounded-card border border-line-default bg-surface-card">
+                <div
+                  class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                >
+                  <div class="text-secondary font-medium">Agent thread — Steward</div>
+                  <div class="text-meta text-ink-meta text-pretty">
+                    Durable per-agent thread: job progress, findings, an inline decision, a
+                    confidential artifact, and the context panel.
+                  </div>
+                  <span class="ml-auto flex items-center gap-3"
+                    ><button
+                      type="button"
+                      data-load-frame
+                      class="cursor-pointer rounded-control border border-line-control bg-surface-control-hover px-3 py-1.5 text-meta font-medium text-ink-primary hover:bg-surface-control-active"
+                    >
+                      Load preview</button
+                    ><a href="./staff-agent-thread.html" target="_blank" class="text-meta text-link"
+                      >Open full page ↗</a
+                    ></span
+                  >
+                </div>
+                <div
+                  class="relative overflow-hidden rounded-b-card bg-surface-canvas"
+                  style="height: 732px"
+                >
+                  <div
+                    class="pointer-events-none absolute inset-0 grid place-items-center font-mono text-mono text-ink-label"
+                  >
+                    preview not loaded
+                  </div>
+                  <iframe
+                    data-src="./staff-agent-thread.html"
+                    title="Agent thread — Steward"
+                    class="block border-0"
+                    style="
+                      width: 1440px;
+                      height: 1180px;
+                      transform: scale(0.62);
+                      transform-origin: top left;
+                      position: relative;
+                    "
+                  ></iframe>
+                </div>
+              </div>
+              <div class="rounded-card border border-line-default bg-surface-card">
+                <div
+                  class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line-strong px-4 py-3"
+                >
+                  <div class="text-secondary font-medium">Home</div>
+                  <div class="text-meta text-ink-meta text-pretty">
+                    Exceptions first, then live work, then outcomes and unread — with the global
+                    composer pinned.
+                  </div>
+                  <span class="ml-auto flex items-center gap-3"
+                    ><button
+                      type="button"
+                      data-load-frame
+                      class="cursor-pointer rounded-control border border-line-control bg-surface-control-hover px-3 py-1.5 text-meta font-medium text-ink-primary hover:bg-surface-control-active"
+                    >
+                      Load preview</button
+                    ><a href="./staff-home.html" target="_blank" class="text-meta text-link"
+                      >Open full page ↗</a
+                    ></span
+                  >
+                </div>
+                <div
+                  class="relative overflow-hidden rounded-b-card bg-surface-canvas"
+                  style="height: 818px"
+                >
+                  <div
+                    class="pointer-events-none absolute inset-0 grid place-items-center font-mono text-mono text-ink-label"
+                  >
+                    preview not loaded
+                  </div>
+                  <iframe
+                    data-src="./staff-home.html"
+                    title="Home"
+                    class="block border-0"
+                    style="
+                      width: 1440px;
+                      height: 1320px;
+                      transform: scale(0.62);
+                      transform-origin: top left;
+                      position: relative;
+                    "
+                  ></iframe>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3.5 rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+              <div class="text-secondary font-semibold">Composition order, on every screen</div>
+              <p class="mt-1.5 max-w-copy text-meta text-ink-muted text-pretty">
+                Needs you → Working now → Recent outcomes. A screen never opens with a metric, a
+                chart, or a greeting card. If nothing needs the operator, the first section is
+                simply absent — no empty state, no “all clear” banner.
+              </p>
+            </div>
+          </section>
+
+          <section id="rules" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Rules that survive the port</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              These are the ones most easily lost in a utility rewrite.
+            </p>
+            <div class="mt-5">
+              <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,300px),1fr))] gap-2.5">
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Color is a status channel</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Blue is working, amber needs you, red failed, gray idle, teal private. Never
+                    color for hierarchy or emphasis.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">No shadows</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Depth is a surface step plus a 1px border. There is no elevation scale, so
+                    shadow-* never appears.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Exceptions first</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Blocked and failed above running, running above done. The operator should never
+                    scroll to find a problem.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Motion means live</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Three animate-* utilities, for work happening right now. No entrance animations,
+                    ever.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Hover changes color</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Never geometry. No hover:scale-*, no hover:-translate-y-*, no transform
+                    transitions.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">One breakpoint, chrome only</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    mobile: / desktop: at 900px. Content is fluid via flex-wrap, clamp() and
+                    auto-fit grids.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Mono for machine facts</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Ids, counts, durations, exit codes, tool scopes, paths. Language is always sans.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Privacy reassures</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    Describe the mechanism — “never leaves this machine”, “retained 90 days”. Teal,
+                    not red. No shields.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Counts carry context</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    “3 open · 1 failure”, not “3”. A bare number is a metric, not information.
+                  </p>
+                </div>
+                <div class="rounded-row border border-line-inset bg-surface-panel px-4 py-3.5">
+                  <div class="text-secondary font-semibold">Name the action</div>
+                  <p class="mt-1.5 text-meta text-ink-muted text-pretty">
+                    “Retry 8 sources”, “Private prep only”. Buttons are verbs with objects.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="never" class="scroll-mt-6 border-t border-line-subtle pt-9">
+            <div class="flex items-center gap-3">
+              <h2 class="text-heading font-semibold">Never</h2>
+              <div class="h-px flex-1 bg-line-subtle"></div>
+            </div>
+            <p class="mt-2.5 max-w-copy text-secondary text-ink-muted text-pretty">
+              If a generated screen contains any of these, it is off-system.
+            </p>
+            <div class="mt-5">
+              <div
+                class="rounded-card border border-line-default bg-surface-card divide-y divide-line-subtle"
+              >
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    bg-neutral-900, text-slate-400, bg-blue-500
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Any stock Tailwind palette color. Use bg-surface-*, text-ink-*, *-status-*.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">dark:*</div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Theming is data-theme on html plus the variable layer. A dark: variant doubles
+                    every decision and drifts.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    shadow-sm, shadow-lg, drop-shadow-*
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    No shadows in this system, at any size.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    sm: md: lg: xl: 2xl:
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Unused. The only breakpoint variants are mobile: and desktop:.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    max-w-prose
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Tailwind’s static 65ch utility — a theme token cannot override it. The 720px
+                    measure is max-w-copy.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    hover:scale-105, hover:-translate-y-0.5
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Hover changes color only.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    animate-pulse, animate-spin, animate-bounce
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Tailwind’s stock animations. Use animate-pulse-dot / pulse-ring / bar-slide.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    rounded-full on cards, rounded-2xl
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Radius comes from the six-step scale. Full round is for dots and badges only.
+                  </div>
+                </div>
+                <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-4 py-3.5">
+                  <div class="flex-[1_1_260px] font-mono text-mono text-status-failed">
+                    Emoji, gradient backgrounds, icon-as-status
+                  </div>
+                  <div class="flex-[2_1_320px] text-meta text-ink-muted text-pretty">
+                    Not in this product’s vocabulary. Status is a dot; agents are monograms.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const toggle = () => {
+        const el = document.documentElement
+        const theme = el.dataset.theme === "light" ? "dark" : "light"
+        el.dataset.theme = theme
+        // iframes are separate documents — the attribute does not reach them
+        document.querySelectorAll("#screens iframe").forEach((f) => {
+          f.contentWindow && f.contentWindow.postMessage({ type: "staff:theme", theme }, "*")
+        })
+      }
+      document.getElementById("theme-toggle").addEventListener("click", toggle)
+      document.getElementById("theme-toggle-m").addEventListener("click", toggle)
+      // Click-to-load: each embed boots its own Tailwind compiler, so loading both
+      // on page load meant three compilers racing for the same script.
+      document.querySelectorAll("[data-load-frame]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const frame = btn.closest(".rounded-card").querySelector("iframe")
+          if (frame.src) return
+          frame.src =
+            frame.dataset.src + "?theme=" + (document.documentElement.dataset.theme || "dark")
+          btn.remove()
+        })
+      })
+      document.querySelectorAll("#screens iframe").forEach((f) => {
+        f.addEventListener("load", () => {
+          f.contentWindow.postMessage(
+            { type: "staff:theme", theme: document.documentElement.dataset.theme },
+            "*",
+          )
+        })
+      })
+    </script>
+  </body>
+</html>

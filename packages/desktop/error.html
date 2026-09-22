@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <title>Can't connect</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font:
+          13px/1.6 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: #16171b;
+        color: #e8eaed;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-app-region: drag;
+      }
+      .card {
+        width: 420px;
+        text-align: center;
+        padding: 0 24px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 8px;
+      }
+      p {
+        color: #9aa0aa;
+        margin: 0 0 6px;
+      }
+      code {
+        color: #e8eaed;
+        word-break: break-all;
+      }
+      .err {
+        color: #ff7a7a;
+        margin: 8px 0 20px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        -webkit-app-region: no-drag;
+      }
+      button {
+        padding: 9px 16px;
+        border-radius: 8px;
+        border: 1px solid #2f333d;
+        background: #1e2026;
+        color: #e8eaed;
+        font: inherit;
+        cursor: pointer;
+      }
+      button.primary {
+        border: 0;
+        background: #6ea8fe;
+        color: #08213f;
+        font-weight: 600;
+      }
+      button:hover {
+        filter: brightness(1.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Couldn't reach the server</h1>
+      <p><code id="url"></code></p>
+      <p class="err" id="error"></p>
+      <div class="actions">
+        <button class="primary" id="retry">Retry</button>
+        <button id="manage">Manage accounts</button>
+      </div>
+    </div>
+    <script>
+      const params = new URLSearchParams(location.search)
+      document.getElementById("url").textContent = params.get("url") || ""
+      document.getElementById("error").textContent = params.get("error") || ""
+      document.getElementById("retry").onclick = () => window.staffroom.retry()
+      document.getElementById("manage").onclick = () => window.staffroom.manageAccounts()
+    </script>
+  </body>
+</html>

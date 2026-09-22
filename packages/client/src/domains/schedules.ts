@@ -1,0 +1,30 @@
+import type { ScheduleRoutes } from "@staffroom/server/routes"
+import { hc } from "hono/client"
+import { type DomainContext, apiError } from "../http.ts"
+import type { NewSchedule } from "../types.ts"
+
+/** Schedules — the subscriptions that open jobs (recurring or one-off), on the Hono RPC client. */
+export function schedulesDomain(ctx: DomainContext) {
+  const rpc = hc<ScheduleRoutes>(`${ctx.base}/api/schedules`, ctx.hcInit)
+  return {
+    list: async () => {
+      const res = await rpc.index.$get()
+      if (!res.ok) throw await apiError(res)
+      return (await res.json()).schedules
+    },
+    create: async (input: NewSchedule) => {
+      const res = await rpc.index.$post({ json: input })
+      if (!res.ok) throw await apiError(res)
+      return await res.json()
+    },
+    update: async (id: string, patch: Partial<NewSchedule> & { enabled?: boolean }) => {
+      const res = await rpc[":id"].$patch({ param: { id }, json: patch })
+      if (!res.ok) throw await apiError(res)
+      return await res.json()
+    },
+    remove: async (id: string) => {
+      const res = await rpc[":id"].$delete({ param: { id } })
+      if (!res.ok) throw await apiError(res)
+    },
+  }
+}

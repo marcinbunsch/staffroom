@@ -1,0 +1,11 @@
+# This example is its own project, NOT part of the Staffroom monorepo — that is
+# the point: it proves a plugin works from outside the repo. Its own workspace
+# root lets `pnpm install` run here, resolving the `link:` dependencies against
+# the sibling packages, without touching the parent workspace.
+#
+# The build scripts below belong to transitive dependencies the running server
+# never invokes (the server bundle is prebuilt), so they are intentionally not
+# built — set to false to skip them without a prompt.
+allowBuilds:
+  "@google/genai": false
+  protobufjs: false

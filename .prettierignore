@@ -1,0 +1,3 @@
+# Native mobile platform project (committed, but Capacitor/Xcode-managed — not
+# ours to format). Build outputs under it are also .gitignored in packages/mobile.
+packages/mobile/ios

@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "types": ["node", "vite/client"],
+    "jsx": "react-jsx",
+    // Legacy (experimental) decorators for MobX 6's `@observable`/`@action`
+    // style. esbuild — rolldown-vite's dev transform — supports these, unlike
+    // the Stage-3 decorators; paired with useDefineForClassFields so a decorated
+    // field's initializer is still the value makeObservable(this) reads.
+    "experimentalDecorators": true,
+    "useDefineForClassFields": true
+  },
+  "include": ["src", "vite.config.ts"]
+}

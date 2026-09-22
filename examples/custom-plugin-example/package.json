@@ -1,0 +1,20 @@
+{
+  "name": "staffroom-custom-plugin-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A worked example of a Staffroom deployment with a custom plugin.",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env index.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@flue/runtime": "2.0.3",
+    "@staffroom/plugin-core": "link:../../packages/plugin-core",
+    "@staffroom/server": "link:../../packages/server",
+    "valibot": "1.4.2"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

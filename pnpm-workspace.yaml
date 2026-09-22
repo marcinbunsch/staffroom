@@ -1,0 +1,28 @@
+packages:
+  - "packages/*"
+
+# Supply-chain guard: never install a dependency version published less than this
+# many minutes ago (4320 = 3 days). A compromised release that is caught and
+# yanked within a few days never makes it into the lockfile. Only gates *new*
+# resolutions (add/update); versions already pinned in the lockfile are kept.
+# Add package-name globs to minimumReleaseAgeExclude to opt specific deps out.
+minimumReleaseAge: 4320
+
+# esbuild fetches its platform binary; better-sqlite3 compiles (or downloads) a
+# native addon and is unusable without it. The rest are transitive and build
+# nothing we use.
+allowBuilds:
+  "@google/genai": false
+  better-sqlite3: true
+  core-js-pure: false
+  electron: true
+  esbuild: true
+  protobufjs: false
+
+# better-auth, @better-auth/core and @better-auth/api-key all declare
+# @better-auth/utils at exactly 0.4.2, but a fresh resolution once wired the
+# api-key plugin's peer to 0.5.0. That installs a second @better-auth/core, and
+# with two copies the plugins' types no longer line up (no `role` on the session
+# user, no api-key endpoints on `auth.api`). Pin it to the one version they share.
+overrides:
+  "@better-auth/utils": 0.4.2

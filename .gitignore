@@ -1,0 +1,39 @@
+# The v1 prototype: a local, read-only reference. Never committed here — see
+# docs/plans/plan-of-attack.md, decision 5.
+prototype
+
+node_modules
+dist
+*.tsbuildinfo
+
+# Desktop packaging output (the built/signed .app) — never committed.
+packages/desktop/out
+# The standalone desktop app's self-contained server bundle (pnpm build:standalone).
+packages/server/dist-desktop
+*.tgz
+
+# The standalone examples are their own pnpm projects (own workspace root); their
+# lockfiles are generated on `pnpm install` there and not tracked, matching the
+# prototype's shape.
+examples/*/pnpm-lock.yaml
+
+.env
+.env.*
+!.env.example
+
+# Local runtime state ($STAFFROOM_HOME defaults outside the repo, but dev runs
+# and tests are often pointed inside it).
+*.db
+*.db-wal
+*.db-shm
+
+# Generated secrets ($STAFFROOM_HOME/{auth-secret,secret-key}) and any stray
+# key material — never commit these.
+auth-secret
+secret-key
+*.key
+
+.DS_Store
+
+# Worktree-local dev data (disposable)
+.staffroom/

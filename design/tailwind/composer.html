@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Staff — Composer (redesign)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js"></script>
+    <script>
+      /* The preview host occasionally drops this subresource, leaving the page with
+   zero compiled utilities. Detect that, retry from a second CDN, and reload
+   once as a last resort. Real builds compile at build time and need none of
+   this — see readme.md. */
+      ;(function () {
+        var SRCS = [
+          "https://unpkg.com/@tailwindcss/browser@4.1.11/dist/index.global.js",
+          "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.11/dist/index.global.js",
+        ]
+        var i = 0,
+          pending = false
+        function compiled() {
+          return getComputedStyle(document.body).fontFamily.indexOf("IBM Plex") > -1
+        }
+        function check() {
+          if (compiled()) {
+            sessionStorage.removeItem("staff-css-retry")
+            return
+          }
+          if (pending) return
+          if (i < SRCS.length) {
+            pending = true
+            var s = document.createElement("script")
+            s.src = SRCS[i++]
+            s.onload = s.onerror = function () {
+              pending = false
+              setTimeout(check, 1200)
+            }
+            document.head.appendChild(s)
+            return
+          }
+          if (!sessionStorage.getItem("staff-css-retry")) {
+            sessionStorage.setItem("staff-css-retry", "1")
+            location.reload()
+          }
+        }
+        addEventListener("load", function () {
+          setTimeout(check, 1000)
+        })
+      })()
+    </script>
+    <!-- Dev reference only: the CDN build compiles the theme inline. In the app,
+     `@import "./theme.css"` from your real stylesheet does the same job. -->
+    <style type="text/tailwindcss">
+      @import "tailwindcss";
+      /* ==========================================================================
+   Staff — Tailwind v4 theme
+   --------------------------------------------------------------------------
+   Two layers, on purpose:
+
+   1. A RUNTIME VARIABLE LAYER (:root and [data-theme="light"]) holding the
+      actual hex values. Theme switching happens here and nowhere else —
+      set data-theme="light" on <html> and every utility follows.
+   2. An @theme inline BLOCK mapping those variables to Tailwind's token
+      namespaces, which is what generates the utilities. `inline` is required:
+      without it Tailwind would bake the dark hex into each utility and the
+      light theme would never take effect.
+
+   Naming: surfaces are bg-surface-*, borders border-line-*, text text-ink-*,
+   state colours *-status-*. Never reach for a raw hex or a Tailwind palette
+   colour (bg-neutral-900, text-slate-400) — colour in this product is a
+   status channel, and the palette is closed.
+   ========================================================================== */
+
+      /* Fonts and icons arrive via link tags in the head on this page: the browser
+   build cannot resolve the remote stylesheet imports theme.css uses. */
+
+      /* ---------- 1. runtime variables: dark (default) ---------- */
+
+      :root {
+        --surface-canvas: #101013;
+        --surface-rail: #0b0b0d;
+        --surface-rail-alt: #0d0d10;
+        --surface-panel: #131317;
+        --surface-card: #15151a;
+        --surface-card-hover: #17171b;
+        --surface-selected: #1c1c21;
+        --surface-hover: #14141a;
+        --surface-control: #23232a; /* monograms, chips, disabled fills */
+        --surface-control-hover: #2a2a33; /* resting fill for primary buttons */
+        --surface-control-active: #32323d; /* primary button hover */
+        --surface-inset: #1e1e24;
+        --surface-attention: #17161a;
+        --surface-confidential: #14181c;
+        --surface-confidential-strong: #1a2027;
+
+        --line-subtle: #1a1a1f;
+        --line-default: #212128;
+        --line-inset: #1e1e24;
+        --line-strong: #2a2a31;
+        --line-control: #33333c;
+        --line-attention: #2a2620;
+        --line-danger: #3a2a28;
+        --line-failed: #2c211f;
+        --line-confidential: #22303a;
+        --line-accent: #2e3644;
+
+        --ink-primary: #ecebe8;
+        --ink-body: #dddad5;
+        --ink-secondary: #cfccc7;
+        --ink-muted: #a3a09b;
+        --ink-meta: #86837e;
+        --ink-faint: #6f6c68;
+        --ink-label: #56545a;
+        --ink-disabled: #4d4b50;
+        --ink-monogram: #b9b6b0;
+
+        --status-failed: #dd6b62;
+        --status-failed-ink: #e58e86;
+        --status-attention: #e3a857; /* text, dots, spines */
+        --status-attention-fill: #e3a857; /* saturated fill — carries -ink on top */
+        --status-attention-ink: #1a1408;
+        --status-attention-hover: #eeb668;
+        --status-working: #6f9bf0;
+        --status-working-dim: #8fb0e8;
+        --status-done: #7fb08a;
+        --status-idle: #4a4950;
+        --status-confidential: #7fa3b8;
+        --status-confidential-strong: #a9c7d8;
+
+        --tint-attention: rgba(227, 168, 87, 0.12);
+        --tint-failed: rgba(221, 107, 98, 0.12);
+        --tint-failed-hover: rgba(221, 107, 98, 0.16);
+
+        --link: #6f9bf0;
+        --link-hover: #9dbcf6;
+      }
+
+      /* ---------- light: the same system on a warm cream canvas ---------- */
+
+      [data-theme="light"] {
+        --surface-canvas: #f7f4ee;
+        --surface-rail: #f1ede4;
+        --surface-rail-alt: #f1ede4;
+        --surface-panel: #fffdf8;
+        --surface-card: #fffdf8;
+        --surface-card-hover: #f3efe6;
+        --surface-selected: #e9e4d8;
+        --surface-hover: #ece7db;
+        --surface-control: #e9e4d8;
+        --surface-control-hover: #e2dccf;
+        --surface-control-active: #d8d0be;
+        --surface-inset: #e3ded1;
+        --surface-attention: #fdf6e6;
+        --surface-confidential: #eaf1f5;
+        --surface-confidential-strong: #dde8ef;
+
+        --line-subtle: #e6e1d6;
+        --line-default: #e3ded1;
+        --line-inset: #e3ded1;
+        --line-strong: #d5cfc0;
+        --line-control: #cbc4b3;
+        --line-attention: #e7ddc5;
+        --line-danger: #dfc2bd;
+        --line-failed: #ecd5d1;
+        --line-confidential: #c2d3dd;
+        --line-accent: #a7bad6;
+
+        --ink-primary: #201f1d;
+        --ink-body: #2b2a27;
+        --ink-secondary: #4a4842;
+        --ink-muted: #6f6c65;
+        --ink-meta: #847f77;
+        --ink-faint: #8b8880;
+        --ink-label: #98948b;
+        --ink-disabled: #a29e95;
+        --ink-monogram: #6a675f;
+
+        --status-failed: #b2342a;
+        --status-failed-ink: #a83e33;
+        --status-attention: #8a5f16; /* dark enough to read on cream */
+        --status-attention-fill: #eab455; /* bright enough to read as a fill */
+        --status-attention-ink: #1a1408;
+        --status-attention-hover: #f2c26c;
+        --status-working: #3f6bc8;
+        --status-working-dim: #4a6fb2;
+        --status-done: #3f7d52;
+        --status-idle: #b0aba0;
+        --status-confidential: #3d6a84;
+        --status-confidential-strong: #325d76;
+
+        --tint-attention: rgba(150, 105, 20, 0.14);
+        --tint-failed: rgba(178, 52, 42, 0.12);
+        --tint-failed-hover: rgba(178, 52, 42, 0.15);
+
+        --link: #3f6bc8;
+        --link-hover: #2f5ab2;
+      }
+
+      /* ---------- 2. Tailwind token map ---------- */
+
+      @theme inline {
+        /* surfaces → bg-surface-card, etc. */
+        --color-surface-canvas: var(--surface-canvas);
+        --color-surface-rail: var(--surface-rail);
+        --color-surface-rail-alt: var(--surface-rail-alt);
+        --color-surface-panel: var(--surface-panel);
+        --color-surface-card: var(--surface-card);
+        --color-surface-card-hover: var(--surface-card-hover);
+        --color-surface-selected: var(--surface-selected);
+        --color-surface-hover: var(--surface-hover);
+        --color-surface-control: var(--surface-control);
+        --color-surface-control-hover: var(--surface-control-hover);
+        --color-surface-control-active: var(--surface-control-active);
+        --color-surface-inset: var(--surface-inset);
+        --color-surface-attention: var(--surface-attention);
+        --color-surface-confidential: var(--surface-confidential);
+        --color-surface-confidential-strong: var(--surface-confidential-strong);
+
+        /* borders → border-line-default, etc. */
+        --color-line-subtle: var(--line-subtle);
+        --color-line-default: var(--line-default);
+        --color-line-inset: var(--line-inset);
+        --color-line-strong: var(--line-strong);
+        --color-line-control: var(--line-control);
+        --color-line-attention: var(--line-attention);
+        --color-line-danger: var(--line-danger);
+        --color-line-failed: var(--line-failed);
+        --color-line-confidential: var(--line-confidential);
+        --color-line-accent: var(--line-accent);
+
+        /* text → text-ink-muted, etc. */
+        --color-ink-primary: var(--ink-primary);
+        --color-ink-body: var(--ink-body);
+        --color-ink-secondary: var(--ink-secondary);
+        --color-ink-muted: var(--ink-muted);
+        --color-ink-meta: var(--ink-meta);
+        --color-ink-faint: var(--ink-faint);
+        --color-ink-label: var(--ink-label);
+        --color-ink-disabled: var(--ink-disabled);
+        --color-ink-monogram: var(--ink-monogram);
+
+        /* state → bg-status-working, text-status-attention, etc. */
+        --color-status-failed: var(--status-failed);
+        --color-status-failed-ink: var(--status-failed-ink);
+        --color-status-attention: var(--status-attention);
+        --color-status-attention-fill: var(--status-attention-fill);
+        --color-status-attention-ink: var(--status-attention-ink);
+        --color-status-attention-hover: var(--status-attention-hover);
+        --color-status-working: var(--status-working);
+        --color-status-working-dim: var(--status-working-dim);
+        --color-status-done: var(--status-done);
+        --color-status-idle: var(--status-idle);
+        --color-status-confidential: var(--status-confidential);
+        --color-status-confidential-strong: var(--status-confidential-strong);
+
+        --color-tint-attention: var(--tint-attention);
+        --color-tint-failed: var(--tint-failed);
+        --color-tint-failed-hover: var(--tint-failed-hover);
+
+        --color-link: var(--link);
+        --color-link-hover: var(--link-hover);
+
+        /* type */
+        --font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
+
+        --text-title: 26px;
+        --text-title--line-height: 1.2;
+        --text-title--letter-spacing: -0.3px;
+        --text-heading: 16px;
+        --text-subheading: 15px;
+        --text-body: 14px;
+        --text-body--line-height: 1.5;
+        --text-secondary: 13px;
+        --text-meta: 12px;
+        --text-mono: 11px;
+        --text-mono--line-height: 1.4;
+        --text-label: 10px;
+        --text-label--letter-spacing: 0.7px;
+
+        /* radii — 6 chip · 7 monogram · 8 control · 10 row · 12 card · 14 panel */
+        --radius-chip: 6px;
+        --radius-monogram: 7px;
+        --radius-control: 8px;
+        --radius-row: 10px;
+        --radius-card: 12px;
+        --radius-panel: 14px;
+
+        /* layout — spacing-* drives w-/h-/p-, container-* drives max-w- */
+        --spacing-rail: 252px;
+        --spacing-rail-right: 336px;
+        --spacing-tabbar: 82px;
+        --container-content: 1240px; /* max-w-content */
+        --container-copy: 720px; /* max-w-copy — the prose measure. NOT max-w-prose:
+                                    that is a static Tailwind utility (65ch) and
+                                    cannot be overridden by a theme token. */
+        --container-rail-right: 336px; /* max-w-rail-right */
+
+        /* motion — live work only; idle, failed and done never animate */
+        --animate-pulse-dot: pulseDot 2.4s ease-in-out infinite;
+        --animate-pulse-ring: pulseRing 2.4s ease-out infinite;
+        --animate-bar-slide: barSlide 2.8s ease-in-out infinite;
+
+        @keyframes pulseDot {
+          0%,
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.35;
+            transform: scale(0.82);
+          }
+        }
+        @keyframes pulseRing {
+          0% {
+            opacity: 0.45;
+            transform: scale(0.9);
+          }
+          70%,
+          100% {
+            opacity: 0;
+            transform: scale(2.4);
+          }
+        }
+        @keyframes barSlide {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(320%);
+          }
+        }
+      }
+
+      /* ---------- base ---------- */
+
+      @layer base {
+        html,
+        body {
+          margin: 0;
+          background: var(--surface-canvas);
+          color: var(--ink-primary);
+          /* clip, NOT hidden: overflow-x:hidden turns the page into a scroll
+       container and silently breaks every position:sticky inside it. */
+          overflow-x: clip;
+        }
+        body {
+          font-family: var(--font-sans);
+          font-size: 14px;
+          line-height: 1.5;
+          -webkit-font-smoothing: antialiased;
+          -webkit-text-size-adjust: 100%;
+        }
+        a {
+          color: var(--link);
+          text-decoration: none;
+        }
+        a:hover {
+          color: var(--link-hover);
+        }
+
+        ::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: var(--line-strong);
+          border-radius: 6px;
+          border: 3px solid var(--surface-canvas);
+        }
+        ::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation: none !important;
+          }
+        }
+      }
+
+      /* The one breakpoint in the system. Chrome only — content is fluid.
+   Tailwind's own sm/md/lg are unused in this product; use max-mobile:. */
+      @custom-variant mobile (@media (max-width: 900px));
+      @custom-variant desktop (@media (min-width: 901px));
+    </style>
+  </head>
+  <body class="min-h-screen overflow-x-clip bg-surface-canvas text-ink-primary">
+    <div class="mx-auto flex max-w-content flex-col gap-6 px-[clamp(16px,4vw,40px)] py-9">
+      <header class="flex flex-wrap items-end justify-between gap-4">
+        <div class="flex min-w-0 flex-col gap-1.5">
+          <span class="font-mono text-label tracking-[0.7px] uppercase text-ink-label"
+            >Pattern · redesign</span
+          >
+          <h1 class="text-title font-semibold text-ink-primary">Composer</h1>
+        </div>
+        <button
+          type="button"
+          id="themeToggle"
+          class="flex cursor-pointer items-center gap-2 rounded-control border border-line-control bg-transparent px-[13px] py-2 font-sans text-secondary text-ink-muted transition-[background-color,color,border-color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-ink-primary"
+        >
+          <i class="ti ti-sun text-[15px]"></i><span>Light</span>
+        </button>
+      </header>
+
+      <div class="flex flex-wrap items-start gap-6">
+        <div class="flex min-w-0 flex-[1_1_520px] flex-col gap-7">
+          <section class="flex flex-col gap-2.5">
+            <div class="flex flex-wrap items-baseline gap-2.5">
+              <span class="font-mono text-label tracking-[0.7px] uppercase text-ink-label"
+                >Rest</span
+              >
+              <span class="text-meta text-ink-faint">nothing typed — Send is inert</span>
+            </div>
+            <div class="rounded-panel border border-line-strong bg-surface-card px-3.5 py-3">
+              <textarea
+                rows="3"
+                placeholder="Message Responder…"
+                class="min-h-[76px] w-full resize-none border-none bg-transparent px-1 font-sans text-body text-ink-primary outline-none placeholder:text-ink-label"
+              ></textarea>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Attach files"
+                  title="Attach files"
+                  class="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-control border-0 bg-transparent p-0 text-ink-faint transition-[background-color,color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-ink-primary"
+                >
+                  <i class="ti ti-paperclip text-[16px]"></i>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Paste transcript"
+                  title="Paste transcript"
+                  class="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-control border-0 bg-transparent p-0 text-ink-faint transition-[background-color,color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-ink-primary"
+                >
+                  <i class="ti ti-clipboard-text text-[16px]"></i>
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  class="ml-auto shrink-0 cursor-default rounded-control border-0 bg-surface-control px-[15px] py-[7px] font-sans text-secondary font-medium text-ink-disabled"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="flex flex-col gap-2.5">
+            <div class="flex flex-wrap items-baseline gap-2.5">
+              <span class="font-mono text-label tracking-[0.7px] uppercase text-ink-label"
+                >Drafting</span
+              >
+              <span class="text-meta text-ink-faint">two files staged, Send live</span>
+            </div>
+            <div class="rounded-panel border border-line-strong bg-surface-card px-3.5 py-3">
+              <div class="flex flex-wrap gap-1.5 px-1 pb-2.5">
+                <span
+                  class="group/att flex max-w-[240px] items-center gap-2 rounded-chip border border-line-default bg-surface-inset py-1 pr-1 pl-2"
+                >
+                  <i class="ti ti-file-text shrink-0 text-[13px] text-ink-faint"></i>
+                  <span class="min-w-0 truncate text-meta text-ink-secondary">q3-themes.md</span>
+                  <span class="shrink-0 font-mono text-mono text-ink-label">4 KB</span>
+                  <button
+                    type="button"
+                    aria-label="Remove q3-themes.md"
+                    title="Remove"
+                    class="grid h-[18px] w-[18px] shrink-0 cursor-pointer place-items-center rounded-chip border-0 bg-transparent p-0 text-ink-faint transition-[background-color,color] duration-[120ms] ease-out hover:bg-surface-control hover:text-ink-primary"
+                  >
+                    <i class="ti ti-x text-[11px]"></i>
+                  </button>
+                </span>
+                <span
+                  class="group/att flex max-w-[240px] items-center gap-2 rounded-chip border border-line-default bg-surface-inset py-1 pr-1 pl-2"
+                >
+                  <i class="ti ti-table shrink-0 text-[13px] text-ink-faint"></i>
+                  <span class="min-w-0 truncate text-meta text-ink-secondary">payouts-aug.csv</span>
+                  <span class="shrink-0 font-mono text-mono text-ink-label">112 KB</span>
+                  <button
+                    type="button"
+                    aria-label="Remove payouts-aug.csv"
+                    title="Remove"
+                    class="grid h-[18px] w-[18px] shrink-0 cursor-pointer place-items-center rounded-chip border-0 bg-transparent p-0 text-ink-faint transition-[background-color,color] duration-[120ms] ease-out hover:bg-surface-control hover:text-ink-primary"
+                  >
+                    <i class="ti ti-x text-[11px]"></i>
+                  </button>
+                </span>
+              </div>
+              <textarea
+                rows="3"
+                placeholder="Message Responder…"
+                class="min-h-[76px] w-full resize-none border-none bg-transparent px-1 font-sans text-body text-ink-primary outline-none placeholder:text-ink-label"
+              >
+Reply to Marta and attach last quarter’s numbers.</textarea>
+              <div class="mt-2.5 flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Attach files"
+                  title="Attach files"
+                  class="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-control border-0 bg-transparent p-0 text-ink-faint transition-[background-color,color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-ink-primary"
+                >
+                  <i class="ti ti-paperclip text-[16px]"></i>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Paste transcript"
+                  title="Paste transcript"
+                  class="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-control border-0 bg-transparent p-0 text-ink-faint transition-[background-color,color] duration-[120ms] ease-out hover:bg-surface-hover hover:text-ink-primary"
+                >
+                  <i class="ti ti-clipboard-text text-[16px]"></i>
+                </button>
+                <button
+                  type="button"
+                  class="ml-auto shrink-0 cursor-pointer rounded-control border-0 bg-surface-control-hover px-[15px] py-[7px] font-sans text-secondary font-medium text-ink-primary transition-[background-color] duration-[120ms] ease-out hover:bg-surface-control-active"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="flex flex-col gap-2.5">
+            <div class="flex flex-wrap items-baseline gap-2.5">
+              <span class="font-mono text-label tracking-[0.7px] uppercase text-ink-label"
+                >Drag over</span
+              >
+              <span class="text-meta text-ink-faint"
+                >the control row yields to one instruction</span
+              >
+            </div>
+            <div class="rounded-panel border border-line-accent bg-surface-hover px-3.5 py-3">
+              <textarea
+                rows="3"
+                placeholder="Message Responder…"
+                class="min-h-[76px] w-full resize-none border-none bg-transparent px-1 font-sans text-body text-ink-primary outline-none placeholder:text-ink-label"
+              ></textarea>
+              <div
+                class="mt-3 flex items-center gap-2 rounded-control border border-dashed border-line-accent px-3 py-2.5 font-mono text-mono text-ink-muted"
+              >
+                <i class="ti ti-upload text-[14px]"></i><span>Drop to attach</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside
+          class="flex min-w-0 max-w-rail-right flex-[1_1_300px] flex-col gap-3.5 rounded-card border border-line-default bg-surface-card p-[18px]"
+        >
+          <span class="font-mono text-label tracking-[0.7px] uppercase text-ink-label"
+            >What changed</span
+          >
+          <ul class="flex flex-col gap-3.5">
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary"
+                >The paperclip is an icon, not an emoji</span
+              >
+              <span class="text-meta text-ink-muted text-pretty"
+                >A 📎 renders in the platform’s own colour — the one thing colour is reserved for
+                here is status. It’s
+                <code class="font-mono text-mono text-ink-muted">ti-paperclip</code> now, inheriting
+                <code class="font-mono text-mono text-ink-muted">text-ink-faint</code>.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary"
+                >Two icons, not two labels</span
+              >
+              <span class="text-meta text-ink-muted text-pretty"
+                >“Attach to Inbox” is gone — there is just attach. Attach and paste transcript are
+                quiet 32px ghost icon buttons, the same one used for
+                <code class="font-mono text-mono text-ink-muted">+</code> in the tab bar, so neither
+                matches Send’s weight.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary"
+                >One control row, tightened</span
+              >
+              <span class="text-meta text-ink-muted text-pretty"
+                >The row sat 14px below the field with 10px gaps between mismatched pills. Controls
+                now share a 4px-gap cluster on the left, keys and Send on the right, and everything
+                aligns to the field’s 4px text inset.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary"
+                >Attached files are visible</span
+              >
+              <span class="text-meta text-ink-muted text-pretty"
+                >There was nowhere for an attachment to appear. Files sit above the field as chips —
+                type icon, truncated name, mono size, and a remove
+                <code class="font-mono text-mono text-ink-muted">×</code> — so you can see and undo
+                what you’ve staged before sending.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary">Paste attaches</span>
+              <span class="text-meta text-ink-muted text-pretty"
+                >Paste a file or a screenshot and it becomes a chip; paste text and it goes in the
+                field. The clipboard button is for the other case — pulling in a long transcript as
+                an attachment rather than dumping it into the draft.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary">Drag has a state</span>
+              <span class="text-meta text-ink-muted text-pretty"
+                >Dropping a file on a composer is the common way to attach. The panel borrows
+                <code class="font-mono text-mono text-ink-muted">border-line-accent</code> and shows
+                a dashed “Drop to attach” target, replacing the control row so there’s one
+                instruction on screen.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary"
+                >Send reads its own state</span
+              >
+              <span class="text-meta text-ink-muted text-pretty"
+                >Disabled was a bordered button in
+                <code class="font-mono text-mono text-ink-muted">bg-surface-control-hover</code> —
+                brighter than its enabled self on some surfaces. Disabled is now flat
+                <code class="font-mono text-mono text-ink-muted">bg-surface-control</code> with
+                <code class="font-mono text-mono text-ink-muted">text-ink-disabled</code>; enabled
+                steps up on hover.</span
+              >
+            </li>
+            <li
+              class="flex flex-col gap-1 border-b border-line-subtle pb-3.5 last:border-b-0 last:pb-0"
+            >
+              <span class="text-secondary font-medium text-ink-primary">No keyboard hint</span>
+              <span class="text-meta text-ink-muted text-pretty"
+                >The mono
+                <code class="font-mono text-mono text-ink-muted">⏎ send · ⇧⏎ newline</code> legend
+                is gone. It was permanent instructions for a convention people learn once, sitting
+                in the composer’s only quiet space.</span
+              >
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById("themeToggle").addEventListener("click", function () {
+        var root = document.documentElement
+        var light = root.dataset.theme === "light"
+        root.dataset.theme = light ? "dark" : "light"
+        this.querySelector("i").className = "ti " + (light ? "ti-sun" : "ti-moon") + " text-[15px]"
+        this.querySelector("span").textContent = light ? "Light" : "Dark"
+      })
+      document.querySelectorAll("button[aria-label^='Remove']").forEach(function (b) {
+        b.addEventListener("click", function () {
+          b.closest(".group\\/att").remove()
+        })
+      })
+    </script>
+  </body>
+</html>

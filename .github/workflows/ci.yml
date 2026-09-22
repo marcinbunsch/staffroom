@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to a PR makes the run in flight pointless.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The desktop package's `check` only runs `node --check` over its sources,
+      # so CI never needs the ~100 MB Electron binary.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches `engines.node` in package.json. The server uses Node APIs
+          # that only landed in 26.
+          node-version: 26
+          cache: pnpm
+
+      - name: Install
+        # --frozen-lockfile fails rather than resolving anything new, which is
+        # also what keeps the workspace's minimumReleaseAge guard out of CI's way.
+        run: pnpm install --frozen-lockfile
+
+      - name: Check
+        # types, tests, lint and formatting — the same command used locally.
+        run: pnpm check

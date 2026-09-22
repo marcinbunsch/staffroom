@@ -1,0 +1,11 @@
+# Capacitor / Xcode / SPM build output (the ios/ project itself is committed).
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/App/output/
+ios/App/DerivedData/
+ios/App/CapApp-SPM/build/
+ios/App/Podfile.lock
+DerivedData/
+*.xcuserstate
+xcuserdata/

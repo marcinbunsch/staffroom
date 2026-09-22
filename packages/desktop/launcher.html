@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <title>Staffroom</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #16171b;
+        --panel: #1e2026;
+        --panel-hover: #262933;
+        --line: #2f333d;
+        --ink: #e8eaed;
+        --muted: #9aa0aa;
+        --accent: #6ea8fe;
+        --danger: #ff7a7a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          13px/1.5 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .titlebar {
+        height: 38px;
+        -webkit-app-region: drag;
+      }
+      main {
+        padding: 8px 22px 24px;
+      }
+      h1 {
+        margin: 0 0 2px;
+        font-size: 17px;
+        font-weight: 600;
+      }
+      p.sub {
+        margin: 0 0 18px;
+        color: var(--muted);
+      }
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 18px;
+      }
+      .empty {
+        color: var(--muted);
+        padding: 10px 2px;
+      }
+      .account {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        cursor: pointer;
+      }
+      .account:hover {
+        background: var(--panel-hover);
+      }
+      .account .meta {
+        flex: 1;
+        min-width: 0;
+      }
+      .account .label {
+        font-weight: 600;
+      }
+      .account .url {
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .forget {
+        -webkit-app-region: no-drag;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      .forget:hover {
+        color: var(--danger);
+        background: rgba(255, 122, 122, 0.12);
+      }
+      form {
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+      }
+      label.field {
+        display: block;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      input {
+        width: 100%;
+        padding: 9px 11px;
+        margin-bottom: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #131418;
+        color: var(--ink);
+        font: inherit;
+        outline: none;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      button.add {
+        width: 100%;
+        padding: 10px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: #08213f;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.local {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button.local:hover {
+        background: var(--panel-hover);
+      }
+      button.local[hidden] {
+        display: none;
+      }
+      button.add:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .error {
+        color: var(--danger);
+        margin: 0 0 12px;
+        min-height: 1.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="titlebar"></div>
+    <main>
+      <h1>Staffroom</h1>
+      <p class="sub">
+        Connect to a running server, or run one on this computer. Each account keeps its own
+        session.
+      </p>
+
+      <div class="list" id="list"></div>
+
+      <button class="local" id="add-local" type="button" hidden>
+        Run a server on this computer
+      </button>
+
+      <form id="add-form">
+        <label class="field" for="label">Account name</label>
+        <input id="label" placeholder="e.g. Work" autocomplete="off" />
+        <label class="field" for="url">Server URL</label>
+        <input id="url" placeholder="http://127.0.0.1:4317" autocomplete="off" />
+        <p class="error" id="error"></p>
+        <button class="add" id="add" type="submit">Add & connect</button>
+      </form>
+    </main>
+
+    <script>
+      const listEl = document.getElementById("list")
+      const errorEl = document.getElementById("error")
+      const addButton = document.getElementById("add")
+      const labelInput = document.getElementById("label")
+      const urlInput = document.getElementById("url")
+      const localButton = document.getElementById("add-local")
+
+      localButton.onclick = () => window.launcher.addLocal()
+
+      function render(store) {
+        listEl.innerHTML = ""
+        // There is at most one local server; offer to set it up only while there is none.
+        localButton.hidden = (store.list || []).some((account) => account.kind === "local")
+        if (!store.list || store.list.length === 0) {
+          const empty = document.createElement("div")
+          empty.className = "empty"
+          empty.textContent = "No accounts yet — add one below."
+          listEl.appendChild(empty)
+          return
+        }
+        for (const account of store.list) {
+          const row = document.createElement("div")
+          row.className = "account"
+          row.title = "Open " + account.label
+          row.onclick = () => window.launcher.open(account.id)
+
+          const meta = document.createElement("div")
+          meta.className = "meta"
+          const label = document.createElement("div")
+          label.className = "label"
+          label.textContent = account.label
+          const url = document.createElement("div")
+          url.className = "url"
+          url.textContent = account.kind === "local" ? "Runs on this computer" : account.url
+          meta.appendChild(label)
+          meta.appendChild(url)
+
+          const forget = document.createElement("button")
+          forget.className = "forget"
+          forget.textContent = "×"
+          forget.title =
+            account.kind === "local"
+              ? "Stop the local server and forget it (its data is kept)"
+              : "Forget this account"
+          forget.onclick = async (event) => {
+            event.stopPropagation()
+            render({ list: await window.launcher.forget(account.id) })
+          }
+
+          row.appendChild(meta)
+          row.appendChild(forget)
+          listEl.appendChild(row)
+        }
+      }
+
+      document.getElementById("add-form").addEventListener("submit", async (event) => {
+        event.preventDefault()
+        errorEl.textContent = ""
+        addButton.disabled = true
+        addButton.textContent = "Connecting…"
+        const result = await window.launcher.add({
+          label: labelInput.value,
+          url: urlInput.value,
+        })
+        addButton.disabled = false
+        addButton.textContent = "Add & connect"
+        if (result && result.error) errorEl.textContent = result.error
+        // On success the main window opens and the launcher closes.
+      })
+
+      window.launcher.list().then(render)
+    </script>
+  </body>
+</html>

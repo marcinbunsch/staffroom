@@ -1,0 +1,24 @@
+{
+  "name": "@staffroom/cli",
+  "version": "0.5.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "bin": {
+    "staffroom": "./dist/staffroom.mjs"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "check": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@staffroom/client": "workspace:*",
+    "@staffroom/protocol": "workspace:*",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "vitest": "4.1.11"
+  }
+}
