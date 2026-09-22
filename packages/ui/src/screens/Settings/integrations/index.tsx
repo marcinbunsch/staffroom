@@ -158,6 +158,7 @@ export function IntegrationsSection({ me }: { me: Me }) {
                 }}
                 onRemove={() => run(() => api.integrations.remove(integration.name))}
                 onDisconnect={() => run(() => api.integrations.disconnect(integration.name))}
+                onSandboxBuilt={reload}
               />
             ))}
           </div>

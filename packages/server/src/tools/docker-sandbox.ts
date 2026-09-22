@@ -4,6 +4,7 @@ import { mkdir } from "node:fs/promises"
 import { join } from "node:path"
 import { type SandboxDriver, type SandboxFactory, sandboxFromDriver } from "@flue/runtime"
 import type { FileStat, Sandbox, ShellResult } from "@flue/runtime"
+import sandboxDockerfile from "../../docker/sandbox.Dockerfile?raw"
 import { STAFFROOM_HOME } from "../core/config.ts"
 
 /**
@@ -84,6 +85,75 @@ export async function dockerSandboxAvailable(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/** One image build's progress, kept for the settings card to poll. */
+export interface SandboxImageBuild {
+  running: boolean
+  failed: boolean
+  /** The tail of the combined build output. */
+  log: string
+}
+
+/** What the settings card needs: the daemon, the image, and any build. */
+export interface SandboxImageStatus {
+  daemon: boolean
+  image: boolean
+  tag: string
+  build: SandboxImageBuild | null
+}
+
+// The last (or current) image build. One at a time; kept after it ends so the
+// card can show a failure's log.
+let imageBuild: SandboxImageBuild | null = null
+const BUILD_LOG_CAP = 16_384
+const BUILD_TIMEOUT_MS = 600_000
+
+/** Probe the daemon and the image separately, so the card can say which is missing. */
+export async function sandboxImageStatus(): Promise<SandboxImageStatus> {
+  const daemon =
+    (await docker(["version", "--format", "{{.Server.Version}}"], undefined, 5_000)).code === 0
+  const image = daemon && (await docker(["image", "inspect", IMAGE], undefined, 5_000)).code === 0
+  return { daemon, image, tag: IMAGE, build: imageBuild }
+}
+
+/**
+ * Build the sandbox image from the bundled Dockerfile — what `pnpm sandbox:build`
+ * does, without a checkout. The Dockerfile is self-contained (no COPY), so it is
+ * piped to `docker build -` with no context. Single-flight: a second call while
+ * one runs just reports the one in progress. On success the boot probe re-runs,
+ * so the sandbox becomes available without a restart.
+ */
+export function startSandboxImageBuild(): SandboxImageBuild {
+  if (imageBuild?.running) return imageBuild
+  const build: SandboxImageBuild = { running: true, failed: false, log: "" }
+  imageBuild = build
+
+  const child = spawn("docker", ["build", "-t", IMAGE, "-"], { stdio: ["pipe", "pipe", "pipe"] })
+  const timer = setTimeout(() => child.kill("SIGKILL"), BUILD_TIMEOUT_MS)
+  const append = (chunk: unknown) => {
+    build.log = (build.log + String(chunk)).slice(-BUILD_LOG_CAP)
+  }
+  child.stdout.on("data", append)
+  child.stderr.on("data", append)
+  child.on("error", (error) => {
+    clearTimeout(timer)
+    append(`${error.message}\n`)
+    build.running = false
+    build.failed = true
+  })
+  child.on("close", (code) => {
+    clearTimeout(timer)
+    build.running = false
+    build.failed = code !== 0
+    if (code === 0) void initDockerSandbox()
+  })
+  // A failed spawn (no docker binary) surfaces on the 'error' handler above;
+  // don't let the doomed stdin write crash the process on top of it.
+  child.stdin.on("error", () => {})
+  child.stdin.write(sandboxDockerfile)
+  child.stdin.end()
+  return build
 }
 
 // The boot-time flag the render path reads synchronously.

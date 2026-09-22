@@ -35,6 +35,18 @@ export function integrationsDomain(ctx: DomainContext) {
       const res = await rpc[":name"].$delete({ param: { name } })
       if (!res.ok) throw await apiError(res)
     },
+    // The Docker sandbox runtime: daemon/image presence, and the server-side
+    // image build the settings card offers when the image is missing.
+    sandboxStatus: async () => {
+      const res = await rpc.sandbox.status.$get()
+      if (!res.ok) throw await apiError(res)
+      return (await res.json()).status
+    },
+    buildSandboxImage: async () => {
+      const res = await rpc.sandbox.build.$post()
+      if (!res.ok) throw await apiError(res)
+      return (await res.json()).build
+    },
     // Per-user connect: the server builds the consent URL against our own origin
     // (so the redirect matches); the caller sends the browser there.
     connect: async (name: string) => {

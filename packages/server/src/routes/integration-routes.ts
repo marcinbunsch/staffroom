@@ -14,6 +14,7 @@ import {
   integrationCatalog,
   integrationTypes,
 } from "../core/integrations.ts"
+import { sandboxImageStatus, startSandboxImageBuild } from "../tools/docker-sandbox.ts"
 import type { SessionEnv } from "../middleware/session.ts"
 
 /**
@@ -108,6 +109,12 @@ export const integrationRoutes = new Hono<SessionEnv>()
     getToolCredentialStore().removeOrg(name)
     return context.json({ removed: getIntegrationStore().remove(name) })
   })
+  // The Docker sandbox runtime behind docker-kind instances: is the daemon up,
+  // is the image built, and how a running build is going. Anyone may look;
+  // building is admin-only (it runs `docker build` on the server). The card
+  // polls this while a build runs.
+  .get("/sandbox/status", async (context) => context.json({ status: await sandboxImageStatus() }))
+  .post("/sandbox/build", adminOnly, (context) => context.json({ build: startSandboxImageBuild() }))
   // Begin the per-user connect for an instance. Returns the consent URL, built
   // with the instance's own scopes so different apps of a type request the
   // permissions each is configured for. The redirect URI points at the server.

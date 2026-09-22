@@ -1,6 +1,6 @@
-import { type ReactNode, useState } from "react"
+import { type ReactNode, useCallback, useEffect, useState } from "react"
 import { Button } from "../../../design/index.ts"
-import { type IntegrationRow, api } from "../../../lib/api.ts"
+import { type IntegrationRow, type SandboxImageStatusRow, api } from "../../../lib/api.ts"
 import { field } from "../common.tsx"
 
 /** One configured integration instance in the list, with the per-user connect. */
@@ -11,6 +11,7 @@ export function IntegrationCard({
   onConfigure,
   onRemove,
   onDisconnect,
+  onSandboxBuilt,
 }: {
   integration: IntegrationRow
   isAdmin: boolean
@@ -18,6 +19,8 @@ export function IntegrationCard({
   onConfigure: () => void
   onRemove: () => void
   onDisconnect: () => void
+  /** docker kind: the image build finished, so `configured` may have flipped. */
+  onSandboxBuilt?: () => void
 }) {
   return (
     <div className="rounded-card border border-line-default bg-surface-card px-[18px] py-4">
@@ -53,13 +56,17 @@ export function IntegrationCard({
         )}
       </div>
       {integration.kind === "docker" ? (
-        <p className="mt-1 text-meta text-ink-faint">
-          {integration.repos.length} repo{integration.repos.length === 1 ? "" : "s"}
-          {integration.repos.length > 0
-            ? `: ${integration.repos.map((r) => r.name).join(", ")}`
-            : ""}
-          {!integration.configured && " · Docker daemon or image not available"}
-        </p>
+        <>
+          <p className="mt-1 text-meta text-ink-faint">
+            {integration.repos.length} repo{integration.repos.length === 1 ? "" : "s"}
+            {integration.repos.length > 0
+              ? `: ${integration.repos.map((r) => r.name).join(", ")}`
+              : ""}
+          </p>
+          {!integration.configured && (
+            <SandboxImageSetup isAdmin={isAdmin} onBuilt={onSandboxBuilt} />
+          )}
+        </>
       ) : integration.kind === "token" ? (
         <p className="mt-1 text-meta text-ink-faint">
           {integration.configured ? "API key stored" : "Add an API key to configure"}
@@ -109,6 +116,107 @@ export function IntegrationCard({
       )}
 
       {teamChips}
+    </div>
+  )
+}
+
+/**
+ * Why a docker instance isn't ready — the daemon, or the image — and the fix.
+ * The image is buildable right here: the server runs `docker build` from its
+ * bundled Dockerfile (what `pnpm sandbox:build` does), and this polls the build
+ * until it lands. When the image appears the parent reloads the list, which
+ * flips the card to configured.
+ */
+function SandboxImageSetup({ isAdmin, onBuilt }: { isAdmin: boolean; onBuilt?: () => void }) {
+  const [status, setStatus] = useState<SandboxImageStatusRow>()
+  const [error, setError] = useState<string>()
+
+  const refresh = useCallback(async () => {
+    try {
+      setStatus(await api.integrations.sandboxStatus())
+    } catch {
+      // The card's "not configured" state already says something is off.
+    }
+  }, [])
+  useEffect(() => void refresh(), [refresh])
+
+  const building = status?.build?.running ?? false
+  useEffect(() => {
+    if (!building) return
+    const timer = setInterval(() => void refresh(), 2000)
+    return () => clearInterval(timer)
+  }, [building, refresh])
+
+  // The build landed — the image went from absent to present while we watched.
+  // Tell the parent once, so the list refetch flips the card. Guarded on the
+  // transition: an image that was already present on mount (the card is
+  // unconfigured for some other reason) must not re-trigger reloads forever.
+  const image = status?.image
+  const [sawMissing, setSawMissing] = useState(false)
+  useEffect(() => {
+    if (image === false) setSawMissing(true)
+    if (image === true && sawMissing) {
+      setSawMissing(false)
+      onBuilt?.()
+    }
+  }, [image, sawMissing, onBuilt])
+
+  async function build() {
+    setError(undefined)
+    try {
+      await api.integrations.buildSandboxImage()
+      await refresh()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Could not start the build.")
+    }
+  }
+
+  if (!status) return null
+
+  if (!status.daemon) {
+    return (
+      <p className="mt-2 text-meta text-status-attention">
+        <i className="ti ti-alert-triangle" /> Docker daemon unreachable — start Docker, then{" "}
+        <button type="button" className="underline" onClick={() => void refresh()}>
+          check again
+        </button>
+        .
+      </p>
+    )
+  }
+
+  if (status.image) {
+    // Built, but the boot probe hasn't flipped the card yet; the reload will.
+    return (
+      <p className="mt-2 text-meta text-status-done">
+        <i className="ti ti-circle-check" /> Image {status.tag} present.
+      </p>
+    )
+  }
+
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <p className="text-meta text-ink-muted">
+        {building
+          ? `Building ${status.tag}…`
+          : status.build?.failed
+            ? `Building ${status.tag} failed.`
+            : `The sandbox image (${status.tag}) is not built yet.`}
+        {!building && !isAdmin && " Ask an admin to build it."}
+      </p>
+      {isAdmin && !building && (
+        <div>
+          <Button variant="primary" onClick={() => void build()}>
+            {status.build?.failed ? "Retry build" : "Build image"}
+          </Button>
+        </div>
+      )}
+      {status.build && (building || status.build.failed) && status.build.log && (
+        <pre className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-control border border-line-default bg-surface-inset px-2.5 py-1.5 font-mono text-mono text-ink-muted">
+          {status.build.log}
+        </pre>
+      )}
+      {error && <p className="text-meta text-status-failed">{error}</p>}
     </div>
   )
 }

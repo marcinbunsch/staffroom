@@ -197,6 +197,13 @@ export interface IntegrationRow {
   /** Connected, but the provider rejected the token — needs reconnecting. */
   stale: boolean
 }
+/** The sandbox runtime behind docker-kind integrations, for the settings card. */
+export interface SandboxImageStatusRow {
+  daemon: boolean
+  image: boolean
+  tag: string
+  build: { running: boolean; failed: boolean; log: string } | null
+}
 export interface IntegrationTypeRow {
   type: string
   kind: IntegrationKind
