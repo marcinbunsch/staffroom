@@ -155,7 +155,9 @@ function signingOptions() {
   const options = { osxSign: { identity } }
   const appleId = process.env.STAFF_SIGN_APPLE_ID
   const appleIdPassword = process.env.STAFF_SIGN_APP_PASSWORD
-  const teamId = process.env.STAFF_SIGN_TEAM_ID ?? identity.match(/\(([^)]+)\)\s*$/)?.[1]
+  // `||`, not `??`: CI exports the variable from an unset secret as "", which
+  // must still fall back to parsing the identity or notarization silently skips.
+  const teamId = process.env.STAFF_SIGN_TEAM_ID || identity.match(/\(([^)]+)\)\s*$/)?.[1]
   if (appleId && appleIdPassword && teamId && !process.env.STAFF_PACK_SKIP_NOTARIZE) {
     options.osxNotarize = { appleId, appleIdPassword, teamId }
   }
