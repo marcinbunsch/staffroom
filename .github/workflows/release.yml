@@ -86,7 +86,9 @@ jobs:
           STAFF_SIGN_APP_PASSWORD: ${{ secrets.STAFF_SIGN_APP_PASSWORD }}
           # Only needed if the identity string has no "(TEAMID)" suffix to parse.
           STAFF_SIGN_TEAM_ID: ${{ secrets.STAFF_SIGN_TEAM_ID }}
-        run: pnpm --filter @staffroom/desktop pack
+        # `run pack`, not `pack`: bare `pack` is pnpm's own tarball command and
+        # exits 0 without ever touching scripts/pack.mjs.
+        run: pnpm --filter @staffroom/desktop run pack
 
       # After notarization, not before: notarizing staples the ticket to the
       # bundle, and a zip made earlier would not carry it. ditto is what Apple
