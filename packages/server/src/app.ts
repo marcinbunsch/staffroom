@@ -151,6 +151,18 @@ function wireAgent(): void {
     })
   })
 
+  // The operator's hard-stop needs to durably abort the running job session.
+  // app.ts owns `init(StaffAgent, ...).abort()`; hand it to the coordinator here,
+  // the same no-cycle seam the dispatcher uses. Errors are swallowed — a session
+  // that never materialized must not block recording the stop.
+  jobs.setAborter((session) =>
+    init(StaffAgent, { id: session })
+      .abort()
+      .catch((error) => {
+        console.error(`[jobs] abort of ${session} failed:`, error)
+      }),
+  )
+
   // The same delivery for a message that is not a job (an operator's answer to
   // an attention item). A failure here is logged, not fatal: the originating
   // request is already closed.

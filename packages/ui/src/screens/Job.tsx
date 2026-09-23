@@ -163,6 +163,16 @@ export const Job = observer(function Job({ me }: { me: Me }) {
               Pause
             </Button>
           )}
+          {isOpen && job.state !== "paused" && (
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (window.confirm("Stop this job? This can't be undone.")) void act("stop")
+              }}
+            >
+              Stop
+            </Button>
+          )}
           {job.state === "paused" && (
             <Button variant="primary" onClick={() => void act("resume")}>
               Resume
@@ -171,6 +181,16 @@ export const Job = observer(function Job({ me }: { me: Me }) {
           {job.state === "failed" && (
             <Button variant="primary" onClick={() => void act("restart")}>
               Restart
+            </Button>
+          )}
+          {(job.state === "paused" || job.state === "failed") && (
+            <Button
+              variant="danger"
+              onClick={() => {
+                if (window.confirm("Cancel this job? This can't be undone.")) void act("cancel")
+              }}
+            >
+              Cancel
             </Button>
           )}
           <span className="ml-auto font-mono text-mono text-ink-faint">

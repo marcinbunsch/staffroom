@@ -23,6 +23,14 @@ import type { JobEntryTable, JobTable } from "./schema.ts"
  */
 export type JobDispatcher = (session: string, body: string, kind: "signal" | "user") => void
 
+/**
+ * Durably aborts a running job session — the live turn plus anything queued
+ * behind it. Injected from `app.ts` so the coordinator never imports the agent,
+ * the same seam as {@link JobDispatcher}. Swallows its own errors (a session
+ * that never materialized is not the operator's problem), so it always resolves.
+ */
+export type JobAborter = (session: string) => Promise<void>
+
 /** Thrown when a loop guardrail (tree depth, open-job count) is hit. */
 export class JobCapError extends Error {}
 
@@ -71,6 +79,7 @@ export interface CreateJobInput {
 export class JobsCoordinator {
   readonly #db: Database
   #dispatch: JobDispatcher | undefined
+  #abort: JobAborter | undefined
   #onTerminal: ((tenantId: string, jobId: number) => void) | undefined
   readonly #listeners = new Set<() => void>()
 
@@ -81,6 +90,16 @@ export class JobsCoordinator {
   /** Wire how job messages reach agent sessions. Set once at boot. */
   setDispatcher(dispatch: JobDispatcher): void {
     this.#dispatch = dispatch
+  }
+
+  /**
+   * Wire how a running job session is durably aborted. Injected from `app.ts`
+   * (which owns `init(StaffAgent, ...).abort()`) for the same no-cycle reason as
+   * the dispatcher. Used by {@link stop} to hard-stop the live turn. Optional:
+   * left unset, {@link stop} just records the cancellation.
+   */
+  setAborter(abort: JobAborter): void {
+    this.#abort = abort
   }
 
   /**
@@ -481,13 +500,80 @@ export class JobsCoordinator {
   }
 
   /**
+   * Hard-stop a running job: durably abort the live turn (via the injected
+   * aborter), then record it cancelled. The operator's decision is final — the
+   * job leaves the working set even if the abort itself failed or Flue has
+   * already died. Accepts any open job (assigned/working/waiting_children/paused);
+   * a terminal job throws.
+   */
+  async stop(tenantId: string, id: number, actor: JobActor): Promise<Job> {
+    const job = this.#requireOpen(tenantId, id)
+    if (job.assigneeAgent) await this.#abort?.(this.sessionOf(job))
+    return this.#markCancelled(
+      tenantId,
+      id,
+      actor,
+      "Stopped by operator.",
+      "stopped",
+      "Operator aborted in-flight work",
+    )
+  }
+
+  /**
+   * Cancel a job that is not running: a `paused` job the operator is holding, or
+   * a terminal `failed` job they want to retire instead of restart. Marks it
+   * `cancelled` with no abort — a paused job has no live turn, and a failed job's
+   * submission already settled.
+   */
+  cancel(tenantId: string, id: number, actor: JobActor): Job {
+    const job = this.#require(tenantId, id)
+    if (job.state !== "paused" && job.state !== "failed") {
+      throw new JobCapError(
+        `job #${id} is ${job.state}; only a paused or failed job can be cancelled`,
+      )
+    }
+    return this.#markCancelled(
+      tenantId,
+      id,
+      actor,
+      "Cancelled by operator.",
+      "cancelled",
+      "Cancelled by operator",
+    )
+  }
+
+  /**
    * Record that the operator hard-stopped the job (the abort itself is the
    * caller's). The operator's decision is final: the job leaves the working set
    * even if Flue has already died.
    */
   recordStop(tenantId: string, id: number, actor: JobActor): Job {
-    const job = this.#requireOpen(tenantId, id)
-    const summary = "Stopped by operator."
+    this.#requireOpen(tenantId, id)
+    return this.#markCancelled(
+      tenantId,
+      id,
+      actor,
+      "Stopped by operator.",
+      "stopped",
+      "Operator aborted in-flight work",
+    )
+  }
+
+  /**
+   * Move a job to `cancelled`, recording an action entry (the `stopped`/`cancelled`
+   * kind and its text) followed by the terminal `cancelled` entry, resuming any
+   * awaited parent and notifying terminal listeners. Shared by {@link stop},
+   * {@link cancel}, and {@link recordStop}.
+   */
+  #markCancelled(
+    tenantId: string,
+    id: number,
+    actor: JobActor,
+    summary: string,
+    actionKind: JobEntryKind,
+    actionText: string,
+  ): Job {
+    const job = this.#require(tenantId, id)
     this.#db.run(
       this.#db.qb
         .updateTable("jobs")
@@ -495,7 +581,7 @@ export class JobsCoordinator {
         .where("tenant_id", "=", tenantId)
         .where("id", "=", id),
     )
-    this.#addEntry(job, actor, "stopped", "Operator aborted in-flight work")
+    this.#addEntry(job, actor, actionKind, actionText)
     this.#addEntry(job, actor, "cancelled", summary)
     // A cancelled awaited child must not strand its parent in `waiting_children`.
     if (job.parentId !== null) this.#resumeParentIfReady(tenantId, job.parentId, actor)

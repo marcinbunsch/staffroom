@@ -32,6 +32,7 @@ describe("isTransientDispatchError", () => {
   it("treats dropped sockets, 429/503, and overload as transient", () => {
     for (const message of [
       "dispatch(sub_01) failed: WebSocket error",
+      "dispatch(sub_01M35QEG6N5ZYHFM2X3PDR4D1S) failed: fetch failed",
       "read ECONNRESET",
       "socket hang up",
       "request failed with status 429",

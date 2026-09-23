@@ -38,6 +38,7 @@ const TRANSIENT_PATTERNS = [
   /etimedout/i,
   /enotfound/i,
   /socket hang up/i,
+  /fetch failed/i,
   /network/i,
   /\btimed? ?out\b/i,
   /\b(429|502|503|504)\b/i,

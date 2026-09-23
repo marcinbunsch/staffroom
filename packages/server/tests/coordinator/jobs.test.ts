@@ -236,6 +236,59 @@ describe("the jobs engine", () => {
       const stopped = jobs.recordStop("alice", job.id, { kind: "operator" })
       expect(stopped.state).toBe("cancelled")
     })
+
+    it("stops a running job: aborts its session, then records it cancelled", async () => {
+      const aborted: string[] = []
+      jobs.setAborter(async (session) => {
+        aborted.push(session)
+      })
+      const job = open(jobs, "alice")
+      jobs.markWorking("alice", job.id, { kind: "agent", id: "devops" })
+
+      const stopped = await jobs.stop("alice", job.id, { kind: "operator" })
+
+      expect(stopped.state).toBe("cancelled")
+      expect(aborted).toEqual([`alice:devops__job-${job.id}`])
+    })
+
+    it("still records the stop when the aborter fails", async () => {
+      // The injected aborter is expected to swallow its own errors, so `stop`
+      // never sees a rejection — but a resolving no-op stands in here.
+      jobs.setAborter(async () => {})
+      const job = open(jobs, "alice")
+      const stopped = await jobs.stop("alice", job.id, { kind: "operator" })
+      expect(stopped.state).toBe("cancelled")
+    })
+
+    it("refuses to stop a job that is already terminal", async () => {
+      const job = open(jobs, "alice")
+      jobs.close("alice", job.id, { kind: "agent", id: "devops" }, "done")
+      await expect(jobs.stop("alice", job.id, { kind: "operator" })).rejects.toThrow(JobCapError)
+    })
+
+    it("cancels a paused job as cancelled", () => {
+      const job = open(jobs, "alice")
+      jobs.pause("alice", job.id, { kind: "operator" })
+      const cancelled = jobs.cancel("alice", job.id, { kind: "operator" })
+      expect(cancelled.state).toBe("cancelled")
+    })
+
+    it("cancels a failed job as cancelled", () => {
+      const job = open(jobs, "alice")
+      jobs.fail("alice", job.id, "boom")
+      const cancelled = jobs.cancel("alice", job.id, { kind: "operator" })
+      expect(cancelled.state).toBe("cancelled")
+    })
+
+    it("refuses to cancel a running or done job", () => {
+      const running = open(jobs, "alice")
+      jobs.markWorking("alice", running.id, { kind: "agent", id: "devops" })
+      expect(() => jobs.cancel("alice", running.id, { kind: "operator" })).toThrow(JobCapError)
+
+      const done = open(jobs, "alice")
+      jobs.close("alice", done.id, { kind: "agent", id: "devops" }, "done")
+      expect(() => jobs.cancel("alice", done.id, { kind: "operator" })).toThrow(JobCapError)
+    })
   })
 
   describe("boot recovery of stuck jobs", () => {

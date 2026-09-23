@@ -31,7 +31,7 @@ export const jobRoutes = new Hono<SessionEnv>()
     "/:id/:action",
     zValidator("param", z.object({ id: z.string(), action: z.string() })),
     zValidator("json", z.object({ message: z.string().optional() })),
-    (context) => {
+    async (context) => {
       const { tenantId } = context.get("caller")
       const { id: idParam, action } = context.req.valid("param")
       const id = Number(idParam)
@@ -48,6 +48,10 @@ export const jobRoutes = new Hono<SessionEnv>()
             return context.json({ job: jobs.resume(tenantId, id, actor) })
           case "restart":
             return context.json({ job: jobs.restart(tenantId, id, actor) })
+          case "stop":
+            return context.json({ job: await jobs.stop(tenantId, id, actor) })
+          case "cancel":
+            return context.json({ job: jobs.cancel(tenantId, id, actor) })
           case "steer": {
             if (!body.message) return context.json({ error: "message_required" }, 400)
             return context.json({ job: jobs.steer(tenantId, id, actor, body.message) })
