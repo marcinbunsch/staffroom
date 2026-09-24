@@ -1,5 +1,5 @@
 import { type FlueEvent, observe } from "@flue/runtime"
-import { parseSessionKey } from "@staffroom/protocol"
+import { parseSessionKey, previewFromText } from "@staffroom/protocol"
 import { getActivityTracker } from "./activity.ts"
 import { getChatStore } from "./chats.ts"
 import { getOperatorEvents } from "./operator-events.ts"
@@ -50,10 +50,32 @@ function handle(event: FlueEvent): void {
   })
   const chat = getChatStore().bySession(session)
   if (!chat) return // a brand-new chat whose row is not created yet; nothing to update
-  getChatStore().touch(session)
+  getChatStore().touch(session, new Date().toISOString(), replyPreview(event.messages))
   getUnreadStore().increment(identity.tenantId, chat.agent, session)
   getOperatorEvents().publish({
     tenantId: identity.tenantId,
     event: { type: "agent.unread.changed", agent: chat.agent },
   })
+}
+
+/**
+ * The inbox preview of a finished turn: the text of its last assistant message
+ * that said anything. Null for a turn of only tool calls, which keeps the
+ * previous preview.
+ */
+export function replyPreview(messages: readonly unknown[]): string | null {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index] as { role?: unknown; content?: unknown }
+    if (message?.role !== "assistant" || !Array.isArray(message.content)) continue
+    const text = message.content
+      .filter((part): part is { type: "text"; text: string } => {
+        const candidate = part as { type?: unknown; text?: unknown }
+        return candidate?.type === "text" && typeof candidate.text === "string"
+      })
+      .map((part) => part.text)
+      .join("\n")
+    const preview = previewFromText(text)
+    if (preview) return preview
+  }
+  return null
 }

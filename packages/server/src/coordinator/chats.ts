@@ -200,11 +200,61 @@ export class ChatStore {
     return this.#insert(tenantId, agent, "main", MAIN_TITLE, null)
   }
 
-  /** Record that a chat's session just produced a message (orders history). */
-  touch(session: string, at: string = new Date().toISOString()): void {
+  /**
+   * Record that a chat's session just produced a reply (orders history and the
+   * inbox). A `preview` replaces the stored excerpt; a reply with no text (null)
+   * leaves the previous one, so a tool-only turn doesn't blank the inbox row.
+   */
+  touch(
+    session: string,
+    at: string = new Date().toISOString(),
+    preview: string | null = null,
+  ): void {
     this.#db.run(
-      this.#db.qb.updateTable("chats").set({ last_message_at: at }).where("session", "=", session),
+      this.#db.qb
+        .updateTable("chats")
+        .set(
+          preview === null
+            ? { last_message_at: at }
+            : { last_message_at: at, last_preview: preview },
+        )
+        .where("session", "=", session),
     )
+  }
+
+  /**
+   * The inbox: open chats across all of a tenant's agents that have had a
+   * reply, **unread first**, then by latest reply. Unread is joined here rather
+   * than sorted on the client so the pinning survives paging. A chat nobody has
+   * spoken in yet is left out — it is an empty tab, not mail.
+   */
+  inbox(
+    tenantId: string,
+    { limit, offset }: { limit: number; offset: number },
+  ): { chats: (Chat & { unread: number })[]; total: number } {
+    const base = this.#db.qb
+      .selectFrom("chats")
+      .where("chats.tenant_id", "=", tenantId)
+      .where("chats.closed_at", "is", null)
+      .where("chats.last_message_at", "is not", null)
+    const rows = this.#db.all(
+      base
+        .leftJoin("chat_unread", "chat_unread.session", "chats.session")
+        .selectAll("chats")
+        .select((eb) => eb.fn.coalesce("chat_unread.count", eb.lit(0)).as("unread"))
+        .orderBy((eb) => eb.case().when("chat_unread.count", ">", 0).then(0).else(1).end(), "asc")
+        .orderBy("chats.last_message_at", "desc")
+        .orderBy("chats.id", "desc")
+        .limit(limit)
+        .offset(offset),
+    )
+    const total = this.#db.get<{ total: number }>(
+      base.select((eb) => eb.fn.countAll<number>().as("total")),
+    )
+    return {
+      chats: rows.map(({ unread, ...row }) => ({ ...toChat(row), unread: Number(unread) })),
+      total: total ? Number(total.total) : 0,
+    }
   }
 
   #historyQuery(tenantId: string, agent: string) {
@@ -296,6 +346,7 @@ function toChat(row: Selectable<ChatTable>): Chat {
     closedAt: row.closed_at ?? null,
     createdAt: row.created_at,
     lastMessageAt: row.last_message_at ?? null,
+    lastPreview: row.last_preview ?? null,
   })
 }
 

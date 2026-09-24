@@ -206,6 +206,7 @@ export interface ChatTable {
   closed_at: string | null
   created_at: string
   last_message_at: string | null
+  last_preview: string | null
 }
 
 export interface ChatUnreadTable {

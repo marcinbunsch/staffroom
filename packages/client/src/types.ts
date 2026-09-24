@@ -290,6 +290,7 @@ export interface ChatRow {
   closedAt: string | null
   createdAt: string
   lastMessageAt: string | null
+  lastPreview: string | null
 }
 export interface TabChatRow extends ChatRow {
   unread: number

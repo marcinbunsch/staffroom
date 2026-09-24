@@ -2,6 +2,7 @@ import { AttentionStore } from "./AttentionStore.ts"
 import { ChatsStore } from "./ChatsStore.ts"
 import { CodexUsageStore } from "./CodexUsageStore.ts"
 import { DraftsStore } from "./DraftsStore.ts"
+import { InboxStore } from "./InboxStore.ts"
 import { JobsStore } from "./JobsStore.ts"
 import { type OperatorEvent, watchOperatorStream } from "./operator-stream.ts"
 import { PaletteStore } from "./PaletteStore.ts"
@@ -29,6 +30,8 @@ export class RootStore {
   readonly presence = new PresenceStore()
   readonly attention = new AttentionStore()
   readonly chats = new ChatsStore()
+  // Lazy: loaded when the inbox is first opened, then kept live off the stream.
+  readonly inbox = new InboxStore()
   readonly jobs = new JobsStore()
   readonly schedules = new SchedulesStore()
   // Lazy and self-driven (a five-minute poll started by the composer gauge), so
@@ -85,9 +88,11 @@ export class RootStore {
         // strip's per-chat badges honest. An unread bump for an agent we've
         // never viewed needs nothing more.
         if (this.chats.isLoaded(event.agent)) void this.chats.loadChats(event.agent)
+        if (this.inbox.loaded) void this.inbox.load()
         break
       case "agent.activity.changed":
         if (this.chats.isLoaded(event.agent)) void this.chats.loadChats(event.agent)
+        if (this.inbox.loaded) void this.inbox.load()
         break
       case "job.state.changed":
         void this.jobs.load()

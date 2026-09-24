@@ -56,7 +56,7 @@ describe("migrations", () => {
     const database = freshDatabase()
     // Everything up to but not including the rename.
     const upToDashboards = Object.fromEntries(
-      Object.entries(migrations).filter(([name]) => name !== "035-schedules"),
+      Object.entries(migrations).filter(([name]) => name < "035-schedules"),
     )
     await migrateToLatest(database, upToDashboards)
 
@@ -73,7 +73,7 @@ describe("migrations", () => {
       .run()
 
     // Now apply the rename.
-    expect((await migrateToLatest(database, migrations)).applied).toEqual(["035-schedules"])
+    expect((await migrateToLatest(database, migrations)).applied).toContain("035-schedules")
 
     expect(tableNames(database)).toContain("schedules")
     expect(tableNames(database)).not.toContain("routines")

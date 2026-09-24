@@ -20,6 +20,9 @@ export type ChatKind = z.infer<typeof ChatKind>
 
 export const CHAT_TITLE_MAX = 60
 export const CHAT_HISTORY_PAGE = 20
+export const INBOX_PAGE = 50
+/** How much of an agent's last reply the inbox keeps as a preview. */
+export const CHAT_PREVIEW_MAX = 200
 export const NEW_CHAT_TITLE = "New chat"
 export const MAIN_TITLE = "Main"
 
@@ -36,6 +39,8 @@ export const Chat = z.object({
   createdAt: z.string(),
   /** ISO of the last message, or null until something is said; orders history. */
   lastMessageAt: z.string().nullable(),
+  /** A plain-text excerpt of the agent's last reply, or null before one. */
+  lastPreview: z.string().nullable(),
 })
 export type Chat = z.infer<typeof Chat>
 
@@ -52,6 +57,17 @@ export const ChatList = z.object({
   historyCount: z.number().int().nonnegative(),
 })
 export type ChatList = z.infer<typeof ChatList>
+
+/**
+ * A page of the inbox: every open chat across the tenant's agents that has had
+ * a reply, unread first, then by latest reply. Each carries the same live state
+ * as a tab.
+ */
+export const InboxPage = z.object({
+  chats: z.array(TabChat),
+  total: z.number().int().nonnegative(),
+})
+export type InboxPage = z.infer<typeof InboxPage>
 
 /** A page of history: every chat except the live main. */
 export const ChatHistoryPage = z.object({
@@ -79,4 +95,23 @@ export function titleFromMessage(message: string): string {
   const line = message.trim().split("\n", 1)[0]?.trim() ?? ""
   if (!line) return NEW_CHAT_TITLE
   return line.length > CHAT_TITLE_MAX ? `${line.slice(0, CHAT_TITLE_MAX - 1).trimEnd()}…` : line
+}
+
+/**
+ * A reply's inbox preview: the Markdown's punctuation dropped (a preview is read
+ * as plain text), whitespace collapsed to single spaces, capped. A light strip,
+ * not a parser — it only needs to read well in one line. Null when the reply had
+ * no text at all (a turn of only tool calls), so the caller can keep the
+ * previous preview rather than blank it.
+ */
+export function previewFromText(text: string): string | null {
+  const flat = text
+    .replace(/```[^\n]*\n?/g, " ")
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/^\s{0,3}(?:#{1,6}|>|[-*+]|\d+\.)\s+/gm, "")
+    .replace(/(\*\*|__|`)/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  if (!flat) return null
+  return flat.length > CHAT_PREVIEW_MAX ? `${flat.slice(0, CHAT_PREVIEW_MAX - 1).trimEnd()}…` : flat
 }

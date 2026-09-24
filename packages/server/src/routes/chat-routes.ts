@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator"
-import { CHAT_HISTORY_PAGE } from "@staffroom/protocol"
+import { CHAT_HISTORY_PAGE, INBOX_PAGE } from "@staffroom/protocol"
 import { Hono } from "hono"
 import { z } from "zod"
 import { getActivityTracker } from "../coordinator/activity.ts"
@@ -49,6 +49,23 @@ export const chatRoutes = new Hono<SessionEnv>()
       const limit = Math.min(Number(context.req.query("limit")) || CHAT_HISTORY_PAGE, 100)
       const offset = Math.max(Number(context.req.query("offset")) || 0, 0)
       return context.json(getChatStore().history(tenantId, agent, { limit, offset }))
+    },
+  )
+  /**
+   * The inbox: every open chat that has had a reply, across all agents, unread
+   * first then by latest reply — each with the tab strip's live unread + at-work.
+   */
+  .get(
+    "/inbox",
+    zValidator("query", z.object({ limit: z.string().optional(), offset: z.string().optional() })),
+    (context) => {
+      const { tenantId } = context.get("caller")
+      const limit = Math.min(Number(context.req.query("limit")) || INBOX_PAGE, 200)
+      const offset = Math.max(Number(context.req.query("offset")) || 0, 0)
+      const page = getChatStore().inbox(tenantId, { limit, offset })
+      const activity = getActivityTracker()
+      const chats = page.chats.map((chat) => ({ ...chat, active: activity.isActive(chat.session) }))
+      return context.json({ chats, total: page.total })
     },
   )
   /** Search open chats by title across the tenant — the command palette's chat jump. */

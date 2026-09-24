@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
+import { replyPreview } from "../../src/coordinator/chat-activity.ts"
 import { ChatStore, MainChatError } from "../../src/coordinator/chats.ts"
+import { UnreadStore } from "../../src/coordinator/unread.ts"
 import { migratedDatabase } from "../migrated-database.ts"
 
 async function store(): Promise<ChatStore> {
@@ -139,5 +141,88 @@ describe("the chat store", () => {
     chats.openSide("alice", "pm", "Just planning")
     // A literal % matches the percent sign, not every title.
     expect(chats.searchByTitle("alice", "100%").map((c) => c.title)).toEqual(["100% coverage"])
+  })
+
+  it("touch records a preview, and a text-less reply keeps the previous one", async () => {
+    const chats = await store()
+    const main = chats.main("alice", "pm")
+    chats.touch(main.session, "2026-09-24T10:00:00.000Z", "First reply")
+    expect(chats.get("alice", main.id)?.lastPreview).toBe("First reply")
+    chats.touch(main.session, "2026-09-24T10:05:00.000Z")
+    const after = chats.get("alice", main.id)
+    expect(after?.lastPreview).toBe("First reply")
+    expect(after?.lastMessageAt).toBe("2026-09-24T10:05:00.000Z")
+  })
+})
+
+describe("the inbox", () => {
+  it("lists replied-to open chats across agents, unread first then newest reply", async () => {
+    const database = await migratedDatabase()
+    const chats = new ChatStore(database)
+    const unread = new UnreadStore(database)
+
+    const pm = chats.main("alice", "pm")
+    const devops = chats.main("alice", "devops")
+    const side = chats.openSide("alice", "pm", "Research")
+    chats.openSide("alice", "pm", "Never spoken in") // no reply yet — not mail
+    const closed = chats.openSide("alice", "devops", "Archived")
+    chats.main("bob", "pm") // another tenant
+
+    chats.touch(pm.session, "2026-09-24T09:00:00.000Z", "oldest")
+    chats.touch(devops.session, "2026-09-24T11:00:00.000Z", "newest")
+    chats.touch(side.session, "2026-09-24T10:00:00.000Z", "middle")
+    chats.touch(closed.session, "2026-09-24T12:00:00.000Z", "archived")
+    chats.close("alice", closed.id)
+    chats.touch(chats.main("bob", "pm").session, "2026-09-24T13:00:00.000Z", "bob's")
+    // The oldest chat has an unread reply, so it pins to the top.
+    unread.increment("alice", "pm", pm.session)
+    unread.increment("alice", "pm", pm.session)
+
+    const page = chats.inbox("alice", { limit: 10, offset: 0 })
+    expect(page.total).toBe(3)
+    expect(page.chats.map((chat) => [chat.lastPreview, chat.unread])).toEqual([
+      ["oldest", 2],
+      ["newest", 0],
+      ["middle", 0],
+    ])
+
+    // Reading it drops it back into reply order.
+    unread.markRead(pm.session)
+    expect(chats.inbox("alice", { limit: 10, offset: 0 }).chats.map((c) => c.lastPreview)).toEqual([
+      "newest",
+      "middle",
+      "oldest",
+    ])
+    // Pages.
+    const second = chats.inbox("alice", { limit: 2, offset: 2 })
+    expect(second.chats.map((c) => c.lastPreview)).toEqual(["oldest"])
+    expect(second.total).toBe(3)
+  })
+})
+
+describe("reply previews", () => {
+  it("takes the last assistant message that said something, as plain text", () => {
+    const messages = [
+      { role: "user", content: [{ type: "text", text: "hi" }] },
+      {
+        role: "assistant",
+        content: [
+          { type: "thinking", thinking: "hmm" },
+          { type: "text", text: "## Done\n\nI **fixed** the [flaky test](http://x)." },
+        ],
+      },
+      { role: "assistant", content: [{ type: "toolCall", id: "1", name: "x", arguments: {} }] },
+      { role: "toolResult", content: [{ type: "text", text: "tool output" }] },
+    ]
+    expect(replyPreview(messages)).toBe("Done I fixed the flaky test.")
+  })
+
+  it("is null for a turn with no assistant text, and caps long replies", () => {
+    expect(replyPreview([{ role: "assistant", content: [{ type: "toolCall" }] }])).toBeNull()
+    const long = replyPreview([
+      { role: "assistant", content: [{ type: "text", text: "a ".repeat(300) }] },
+    ])
+    expect(long?.length).toBe(200)
+    expect(long?.endsWith("…")).toBe(true)
   })
 })

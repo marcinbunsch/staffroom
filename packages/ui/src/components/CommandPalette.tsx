@@ -370,6 +370,7 @@ function Hint({ keys, label }: { keys: string; label: string }) {
 /** The rail's destinations, mirrored so "Go to" reaches every screen. */
 const NAV: { to: string; label: string; icon: string }[] = [
   { to: "/", label: "Home", icon: "ti-home" },
+  { to: "/inbox", label: "Inbox", icon: "ti-inbox" },
   { to: "/dashboards", label: "Dashboards", icon: "ti-layout-dashboard" },
   { to: "/jobs", label: "Jobs", icon: "ti-checklist" },
   { to: "/schedules", label: "Schedules", icon: "ti-clock" },

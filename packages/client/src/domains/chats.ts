@@ -11,6 +11,14 @@ export function chatsDomain(ctx: DomainContext) {
       if (!res.ok) throw await apiError(res)
       return await res.json()
     },
+    /** Every replied-to open chat across agents, unread first — the inbox. */
+    inbox: async (limit: number, offset: number) => {
+      const res = await rpc.inbox.$get({
+        query: { limit: String(limit), offset: String(offset) },
+      })
+      if (!res.ok) throw await apiError(res)
+      return await res.json()
+    },
     search: async (q: string) => {
       const res = await rpc.search.$get({ query: { q } })
       if (!res.ok) throw await apiError(res)

@@ -873,6 +873,15 @@ export const migrations: Record<string, Migration> = {
       await db.schema.createIndex("schedules_tenant").on("schedules").column("tenant_id").execute()
     },
   },
+
+  "036-chat-preview": {
+    async up(db: Kysely<never>) {
+      // A short plain-text excerpt of the agent's last reply in a chat, so the
+      // inbox can show what was said without loading a transcript. Null until
+      // an agent turn produces text; existing chats fill in on their next reply.
+      await db.schema.alterTable("chats").addColumn("last_preview", "text").execute()
+    },
+  },
 }
 
 export interface MigrationOutcome {

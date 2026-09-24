@@ -24,6 +24,7 @@ const Dashboard = lazy(() => import("./Dashboard.tsx").then((m) => ({ default: m
 const EditAgent = lazy(() => import("./EditAgent.tsx").then((m) => ({ default: m.EditAgent })))
 const Files = lazy(() => import("./Files.tsx").then((m) => ({ default: m.Files })))
 const Home = lazy(() => import("./Home.tsx").then((m) => ({ default: m.Home })))
+const Inbox = lazy(() => import("./Inbox.tsx").then((m) => ({ default: m.Inbox })))
 const Job = lazy(() => import("./Job.tsx").then((m) => ({ default: m.Job })))
 const Jobs = lazy(() => import("./Jobs.tsx").then((m) => ({ default: m.Jobs })))
 const Memory = lazy(() => import("./Memory.tsx").then((m) => ({ default: m.Memory })))
@@ -55,6 +56,11 @@ export const Shell = observer(function Shell({ me }: { me: Me }) {
   const activeJobCount = store.jobs.jobs.filter(
     (job) => !TERMINAL_JOB_STATES.has(job.state) && job.state !== "paused",
   ).length
+  // Every unread reply across the staff — the inbox's badge.
+  const unreadCount = roster.reduce(
+    (sum, member) => sum + (store.presence.overviewFor(member.id)?.unreadCount ?? 0),
+    0,
+  )
   const [drawerOpen, setDrawerOpen] = useState(false)
   // Close the mobile drawer whenever the route changes, so a tap that navigates
   // (or a redirect) never leaves it hanging open over the new view.
@@ -82,7 +88,7 @@ export const Shell = observer(function Shell({ me }: { me: Me }) {
         )}
       >
         {onDesktop && <div className="app-drag -mx-3.5 h-[34px] shrink-0" />}
-        <RailContent roster={roster} activeJobCount={activeJobCount} />
+        <RailContent roster={roster} activeJobCount={activeJobCount} unreadCount={unreadCount} />
       </aside>
 
       {/* Mobile: the same rail behind a menu button, as a slide-in drawer. */}
@@ -93,6 +99,7 @@ export const Shell = observer(function Shell({ me }: { me: Me }) {
             <RailContent
               roster={roster}
               activeJobCount={activeJobCount}
+              unreadCount={unreadCount}
               onNavigate={() => setDrawerOpen(false)}
             />
           </div>
@@ -121,6 +128,7 @@ export const Shell = observer(function Shell({ me }: { me: Me }) {
             <Routes>
               <Route path="/dashboards" element={<Dashboards />} />
               <Route path="/dashboards/:id" element={<Dashboard />} />
+              <Route path="/inbox" element={<Inbox />} />
               <Route path="/jobs" element={<Jobs />} />
               <Route path="/jobs/:id" element={<Job me={me} />} />
               <Route path="/schedules" element={<Schedules />} />
@@ -153,10 +161,12 @@ export const Shell = observer(function Shell({ me }: { me: Me }) {
 function RailContent({
   roster,
   activeJobCount,
+  unreadCount,
   onNavigate,
 }: {
   roster: StaffRow[]
   activeJobCount: number
+  unreadCount: number
   onNavigate?: () => void
 }) {
   return (
@@ -177,6 +187,7 @@ function RailContent({
             icon={item.icon}
             end={item.to === "/"}
             activeBadge={item.to === "/jobs" ? activeJobCount : undefined}
+            unreadBadge={item.to === "/inbox" ? unreadCount : undefined}
             onNavigate={onNavigate}
           />
         ))}
@@ -277,6 +288,7 @@ const RailRosterItem = observer(function RailRosterItem({
 
 const NAV: { to: string; label: string; icon: string }[] = [
   { to: "/", label: "Home", icon: "ti-home" },
+  { to: "/inbox", label: "Inbox", icon: "ti-inbox" },
   { to: "/dashboards", label: "Dashboards", icon: "ti-layout-dashboard" },
   { to: "/jobs", label: "Jobs", icon: "ti-checklist" },
   { to: "/schedules", label: "Schedules", icon: "ti-clock" },
@@ -292,6 +304,7 @@ function RailNavItem({
   icon,
   end,
   activeBadge,
+  unreadBadge,
   onNavigate,
 }: {
   to: string
@@ -300,6 +313,8 @@ function RailNavItem({
   /** Match this route exactly — for "/" so Home isn't active on every page. */
   end?: boolean
   activeBadge?: number
+  /** Unread replies behind this destination (the inbox). */
+  unreadBadge?: number
   onNavigate?: () => void
 }) {
   return (
@@ -319,6 +334,7 @@ function RailNavItem({
       <i className={`ti ${icon} w-[18px] text-center text-[17px] opacity-80`} />
       <span className="flex-1">{label}</span>
       {activeBadge !== undefined && activeBadge > 0 && <NavBadge count={activeBadge} active />}
+      {unreadBadge !== undefined && <UnreadBadge count={unreadBadge} />}
     </NavLink>
   )
 }
