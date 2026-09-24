@@ -124,6 +124,18 @@ const SENTRY: IntegrationTypeDef = {
   defaultMcpUrl: "https://mcp.sentry.dev/mcp",
 }
 
+const LINEAR: IntegrationTypeDef = {
+  type: "linear",
+  kind: "mcp",
+  label: "Linear",
+  description:
+    "Linear through its hosted MCP server. There is no app to register — connecting authorizes your own Linear account through Linear's OAuth (the client is registered automatically). Add a Linear MCP toolset to expose its tools.",
+  configFields: [],
+  defaultScopes: [],
+  unlocks: ["Linear"],
+  defaultMcpUrl: "https://mcp.linear.app/mcp",
+}
+
 const HUBSPOT: IntegrationTypeDef = {
   type: "hubspot",
   kind: "mcp",
@@ -183,6 +195,7 @@ const BUILTIN_TYPES: IntegrationTypeDef[] = [
   GITHUB,
   NOTION,
   SENTRY,
+  LINEAR,
   HUBSPOT,
   DOCKER,
   GCP,

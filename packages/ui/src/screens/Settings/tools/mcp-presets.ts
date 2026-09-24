@@ -221,6 +221,7 @@ export const MCP_PRESETS: McpPreset[] = [
   app("github", "GitHub", "https://api.githubcopilot.com/mcp", "github"),
   app("notion", "Notion", "https://mcp.notion.com/mcp", "notion"),
   app("sentry", "Sentry", "https://mcp.sentry.dev/mcp", "sentry"),
+  app("linear", "Linear", "https://mcp.linear.app/mcp", "linear"),
   app("hubspot", "HubSpot", "https://mcp.hubspot.com", "hubspot"),
   app("firecrawl", "Firecrawl", "https://mcp.firecrawl.dev/v2/mcp", "firecrawl"),
 ]

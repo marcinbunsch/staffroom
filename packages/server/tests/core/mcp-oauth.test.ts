@@ -44,11 +44,12 @@ function mockOAuthServer(tokens: {
   return exchanges
 }
 
-describe("notion/sentry integration types", () => {
+describe("notion/sentry/linear integration types", () => {
   it("register as auto-discovered mcp types with a server URL", () => {
     for (const [type, url] of [
       ["notion", "https://mcp.notion.com/mcp"],
       ["sentry", "https://mcp.sentry.dev/mcp"],
+      ["linear", "https://mcp.linear.app/mcp"],
     ] as const) {
       const registered = getIntegrationType(type)
       expect(registered?.kind).toBe("mcp")
