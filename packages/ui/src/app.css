@@ -7,6 +7,15 @@ body,
   margin: 0;
 }
 
+/* The page itself never scrolls — every screen scrolls inside its own pane. On
+   iOS (Safari and the Capacitor WebView) a swipe that hits a pane's top or
+   bottom would otherwise chain to the root and rubber-band the whole app,
+   header and composer included. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   font-family: var(--font-sans, "IBM Plex Sans", system-ui, sans-serif);
   background: var(--surface-canvas);

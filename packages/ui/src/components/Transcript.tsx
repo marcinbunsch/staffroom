@@ -34,7 +34,7 @@ const MESSAGE_PAGE_SIZE = 20
 const BOTTOM_THRESHOLD = 48
 
 const TRANSCRIPT_CLASS =
-  "flex min-h-0 w-full flex-1 flex-col gap-6 overflow-y-auto px-[clamp(16px,3.5vw,36px)] pt-[clamp(20px,3.5vw,30px)] pb-2.5"
+  "flex min-h-0 w-full flex-1 flex-col gap-6 overflow-y-auto overscroll-contain px-[clamp(16px,3.5vw,36px)] pt-[clamp(20px,3.5vw,30px)] pb-2.5"
 
 type TurnActivityPart = Extract<
   FlueConversationMessage["parts"][number],
